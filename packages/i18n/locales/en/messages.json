@@ -567,6 +567,64 @@
       }
     }
   },
+  "act_searchGoogleDrive_start": {
+    "message": "Searching for \"$QUERY$\" in Google Drive",
+    "placeholders": {
+      "query": {
+        "content": "$1",
+        "example": "order.csv"
+      }
+    }
+  },
+  "act_searchGoogleDrive_ok": {
+    "message": "Successfully searched for \"$QUERY$\" in Google Drive",
+    "placeholders": {
+      "query": {
+        "content": "$1",
+        "example": "order.csv"
+      }
+    }
+  },
+  "act_searchGoogleDrive_fail": {
+    "message": "Failed to search Google Drive: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Could not find search box"
+      }
+    }
+  },
+  "act_searchInPage_start": {
+    "message": "Searching page for \"$QUERY$\"",
+    "placeholders": {
+      "query": {
+        "content": "$1",
+        "example": "order.csv"
+      }
+    }
+  },
+  "act_searchInPage_ok": {
+    "message": "Searched for \"$QUERY$\": $RESULT$",
+    "placeholders": {
+      "query": {
+        "content": "$1",
+        "example": "order.csv"
+      },
+      "result": {
+        "content": "$2",
+        "example": "Successfully searched Google Drive"
+      }
+    }
+  },
+  "act_searchInPage_fail": {
+    "message": "Failed to search page: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Could not find search interface"
+      }
+    }
+  },
   "act_goToUrl_start": {
     "message": "Navigating to $URL$",
     "placeholders": {
@@ -655,6 +713,28 @@
       "text": {
         "content": "$2",
         "example": "Submit Button"
+      }
+    }
+  },
+  "act_doubleClick_start": {
+    "message": "Double-clicking on element [$INDEX$]",
+    "placeholders": {
+      "index": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "act_doubleClick_ok": {
+    "message": "Double-clicked on element [$INDEX$]: $TEXT$",
+    "placeholders": {
+      "index": {
+        "content": "$1",
+        "example": "5"
+      },
+      "text": {
+        "content": "$2",
+        "example": "Folder Name"
       }
     }
   },

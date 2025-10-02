@@ -8,19 +8,17 @@ import { ChatCerebras } from '@langchain/cerebras';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatOllama } from '@langchain/ollama';
 import { ChatDeepSeek } from '@langchain/deepseek';
-import { AIMessage } from '@langchain/core/messages';
-import type { BaseMessage } from '@langchain/core/messages';
 
 const maxTokens = 1024 * 4;
 
 // Custom ChatLlama class to handle Llama API response format
 class ChatLlama extends ChatOpenAI {
-  constructor(args: any) {
+  constructor(args: unknown) {
     super(args);
   }
 
   // Override the completionWithRetry method to intercept and transform the response
-  async completionWithRetry(request: any, options?: any): Promise<any> {
+  async completionWithRetry(request: unknown, options?: unknown): Promise<unknown> {
     try {
       // Make the request using the parent's implementation
       const response = await super.completionWithRetry(request, options);
@@ -44,9 +42,15 @@ class ChatLlama extends ChatOpenAI {
             },
           ],
           usage: {
-            prompt_tokens: response.metrics?.find((m: any) => m.metric === 'num_prompt_tokens')?.value || 0,
-            completion_tokens: response.metrics?.find((m: any) => m.metric === 'num_completion_tokens')?.value || 0,
-            total_tokens: response.metrics?.find((m: any) => m.metric === 'num_total_tokens')?.value || 0,
+            prompt_tokens:
+              response.metrics?.find((m: { metric: string; value: number }) => m.metric === 'num_prompt_tokens')
+                ?.value || 0,
+            completion_tokens:
+              response.metrics?.find((m: { metric: string; value: number }) => m.metric === 'num_completion_tokens')
+                ?.value || 0,
+            total_tokens:
+              response.metrics?.find((m: { metric: string; value: number }) => m.metric === 'num_total_tokens')
+                ?.value || 0,
           },
         };
 
@@ -54,7 +58,7 @@ class ChatLlama extends ChatOpenAI {
       }
 
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`[ChatLlama] Error during API call:`, error);
       throw error;
     }

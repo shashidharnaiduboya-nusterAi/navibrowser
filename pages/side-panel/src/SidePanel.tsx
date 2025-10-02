@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { RxDiscordLogo } from 'react-icons/rx';
 import { FiSettings } from 'react-icons/fi';
 import { PiPlusBold } from 'react-icons/pi';
 import { GrHistory } from 'react-icons/gr';
@@ -1000,29 +999,57 @@ const SidePanel = () => {
   return (
     <div>
       <div
-        className={`flex h-screen flex-col ${isDarkMode ? 'bg-slate-900' : "bg-[url('/bg.jpg')] bg-cover bg-no-repeat"} overflow-hidden border ${isDarkMode ? 'border-sky-800' : 'border-[rgb(186,230,253)]'} rounded-2xl`}>
-        <header className="header relative">
+        className={`flex h-screen flex-col relative overflow-hidden ${
+          isDarkMode ? 'bg-neural-gradient-dark plasma-gradient-dark' : 'bg-neural-gradient plasma-gradient'
+        } ${isDarkMode ? 'glass-backdrop-dark neural-flow-bg' : 'glass-backdrop neural-flow-bg'} rounded-2xl ${
+          isDarkMode ? 'shadow-multi-glow-dark' : 'shadow-multi-glow'
+        } backdrop-blur-3xl border ${isDarkMode ? 'border-neural-700/30' : 'border-neural-300/40'}`}>
+        <header
+          className={`header relative ${
+            isDarkMode ? 'glass-backdrop-dark' : 'glass-backdrop'
+          } backdrop-blur-md border-b ${isDarkMode ? 'border-neural-600/30' : 'border-neural-200/50'} neural-glow`}>
           <div className="header-logo">
             {showHistory ? (
               <button
                 type="button"
                 onClick={() => handleBackToChat(false)}
-                className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 ${
+                  isDarkMode
+                    ? 'text-neural-300 hover:text-neural-100 hover:bg-glass-violet'
+                    : 'text-neural-600 hover:text-neural-900 hover:bg-glass-violet'
+                } hover:scale-105 backdrop-blur-sm neural-glow`}
                 aria-label={t('nav_back_a11y')}>
-                {t('nav_back')}
+                <span className="text-lg">←</span>
+                <span className="text-sm font-medium">{t('nav_back')}</span>
               </button>
             ) : (
-              <img src="/icon-128.png" alt="Extension Logo" className="size-6" />
+              <div className="flex items-center gap-3">
+                <div
+                  className={`p-2 rounded-xl ${
+                    isDarkMode ? 'bg-neural-gradient-dark glass-backdrop-dark' : 'bg-neural-gradient glass-backdrop'
+                  } neural-glow animate-pulse-neural`}>
+                  <img src="/icon-128.png" alt="Nanobrowser" className="h-6 w-6" />
+                </div>
+                <span className={`text-lg font-bold ${isDarkMode ? 'text-neural-100' : 'text-neural-900'}`}>
+                  Navibrowser
+                </span>
+              </div>
             )}
           </div>
-          <div className="header-icons">
+          <div className="header-icons flex items-center gap-1">
             {!showHistory && (
               <>
                 <button
                   type="button"
                   onClick={handleNewChat}
                   onKeyDown={e => e.key === 'Enter' && handleNewChat()}
-                  className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
+                  className={`header-icon ${
+                    isDarkMode ? 'text-neural-300 hover:text-plasma-300' : 'text-neural-600 hover:text-plasma-600'
+                  } cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-lg ${
+                    isDarkMode
+                      ? 'hover:bg-glass-violet hover:shadow-neural-dark'
+                      : 'hover:bg-glass-violet hover:shadow-neural'
+                  } backdrop-blur-sm shimmer neural-glow`}
                   aria-label={t('nav_newChat_a11y')}
                   tabIndex={0}>
                   <PiPlusBold size={20} />
@@ -1031,25 +1058,30 @@ const SidePanel = () => {
                   type="button"
                   onClick={handleLoadHistory}
                   onKeyDown={e => e.key === 'Enter' && handleLoadHistory()}
-                  className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
+                  className={`header-icon ${
+                    isDarkMode ? 'text-neural-300 hover:text-cyber-300' : 'text-neural-600 hover:text-cyber-600'
+                  } cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-lg ${
+                    isDarkMode
+                      ? 'hover:bg-glass-cyan hover:shadow-cyber-dark'
+                      : 'hover:bg-glass-cyan hover:shadow-cyber'
+                  } backdrop-blur-sm shimmer neural-glow`}
                   aria-label={t('nav_loadHistory_a11y')}
                   tabIndex={0}>
                   <GrHistory size={20} />
                 </button>
               </>
             )}
-            <a
-              href="https://discord.gg/NN3ABHggMK"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'}`}>
-              <RxDiscordLogo size={20} />
-            </a>
             <button
               type="button"
               onClick={() => chrome.runtime.openOptionsPage()}
               onKeyDown={e => e.key === 'Enter' && chrome.runtime.openOptionsPage()}
-              className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
+              className={`header-icon ${
+                isDarkMode ? 'text-neural-300 hover:text-plasma-300' : 'text-neural-600 hover:text-plasma-600'
+              } cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-lg ${
+                isDarkMode
+                  ? 'hover:bg-glass-violet hover:shadow-plasma-dark'
+                  : 'hover:bg-glass-violet hover:shadow-plasma'
+              } backdrop-blur-sm shimmer neural-glow`}
               aria-label={t('nav_settings_a11y')}
               tabIndex={0}>
               <FiSettings size={20} />
@@ -1072,10 +1104,15 @@ const SidePanel = () => {
             {/* Show loading state while checking model configuration */}
             {hasConfiguredModels === null && (
               <div
-                className={`flex flex-1 items-center justify-center p-8 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>
+                className={`flex flex-1 items-center justify-center p-8 ${
+                  isDarkMode ? 'text-neural-300' : 'text-neural-700'
+                }`}>
                 <div className="text-center">
-                  <div className="mx-auto mb-4 size-8 animate-spin rounded-full border-2 border-sky-400 border-t-transparent"></div>
-                  <p>{t('status_checkingConfig')}</p>
+                  <div
+                    className={`mx-auto mb-4 h-12 w-12 rounded-full ${
+                      isDarkMode ? 'bg-neural-gradient-dark' : 'bg-neural-gradient'
+                    } animate-pulse-neural neural-glow`}></div>
+                  <p className="text-sm font-medium">{t('status_checkingConfig')}</p>
                 </div>
               </div>
             )}
@@ -1083,37 +1120,38 @@ const SidePanel = () => {
             {/* Show setup message when no models are configured */}
             {hasConfiguredModels === false && (
               <div
-                className={`flex flex-1 items-center justify-center p-8 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>
-                <div className="max-w-md text-center">
-                  <img src="/icon-128.png" alt="Nanobrowser Logo" className="mx-auto mb-4 size-12" />
-                  <h3 className={`mb-2 text-lg font-semibold ${isDarkMode ? 'text-sky-200' : 'text-sky-700'}`}>
+                className={`flex flex-1 items-center justify-center p-8 ${
+                  isDarkMode ? 'text-neural-300' : 'text-neural-700'
+                }`}>
+                <div className="max-w-sm text-center">
+                  <div
+                    className={`mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl ${
+                      isDarkMode
+                        ? 'bg-neural-gradient-dark glass-backdrop-dark shadow-neural-dark'
+                        : 'bg-neural-gradient glass-backdrop shadow-neural'
+                    } neural-glow animate-pulse-neural`}>
+                    <img src="/icon-128.png" alt="Navibrowser" className="h-12 w-12" />
+                  </div>
+
+                  <h3 className={`mb-3 text-xl font-bold ${isDarkMode ? 'text-neural-100' : 'text-neural-900'}`}>
                     {t('welcome_title')}
                   </h3>
-                  <p className="mb-4">{t('welcome_instruction')}</p>
+
+                  <p className={`mb-6 text-sm leading-relaxed ${isDarkMode ? 'text-neural-400' : 'text-neural-600'}`}>
+                    {t('welcome_instruction')}
+                  </p>
+
                   <button
                     onClick={() => chrome.runtime.openOptionsPage()}
-                    className={`my-4 rounded-lg px-4 py-2 font-medium transition-colors ${
-                      isDarkMode ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-sky-500 text-white hover:bg-sky-600'
+                    className={`w-full rounded-xl px-6 py-3 font-semibold transition-all duration-300 ${
+                      isDarkMode
+                        ? 'bg-neural-gradient-dark glass-backdrop-dark text-neural-100 hover:shadow-neural-dark hover:scale-105'
+                        : 'bg-neural-gradient glass-backdrop text-white hover:shadow-neural hover:scale-105'
+                    } neural-glow shimmer backdrop-blur-lg border ${
+                      isDarkMode ? 'border-neural-600/30' : 'border-neural-300/50'
                     }`}>
                     {t('welcome_openSettings')}
                   </button>
-                  <div className="mt-4 text-sm opacity-75">
-                    <a
-                      href="https://github.com/nanobrowser/nanobrowser?tab=readme-ov-file#-quick-start"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-700 hover:text-sky-600'}`}>
-                      {t('welcome_quickStart')}
-                    </a>
-                    <span className="mx-2">•</span>
-                    <a
-                      href="https://discord.gg/NN3ABHggMK"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-700 hover:text-sky-600'}`}>
-                      {t('welcome_joinCommunity')}
-                    </a>
-                  </div>
                 </div>
               </div>
             )}
@@ -1123,8 +1161,20 @@ const SidePanel = () => {
               <>
                 {messages.length === 0 && (
                   <>
+                    <div className="flex-1 overflow-y-auto p-4">
+                      <BookmarkList
+                        bookmarks={favoritePrompts}
+                        onBookmarkSelect={handleBookmarkSelect}
+                        onBookmarkUpdateTitle={handleBookmarkUpdateTitle}
+                        onBookmarkDelete={handleBookmarkDelete}
+                        onBookmarkReorder={handleBookmarkReorder}
+                        isDarkMode={isDarkMode}
+                      />
+                    </div>
                     <div
-                      className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} mb-2 p-2 shadow-sm backdrop-blur-sm`}>
+                      className={`border-t ${
+                        isDarkMode ? 'border-neural-700/40' : 'border-neural-300/40'
+                      } p-4 backdrop-blur-sm`}>
                       <ChatInput
                         onSendMessage={handleSendMessage}
                         onStopTask={handleStopTask}
@@ -1141,44 +1191,36 @@ const SidePanel = () => {
                         onReplay={handleReplay}
                       />
                     </div>
-                    <div className="flex-1 overflow-y-auto">
-                      <BookmarkList
-                        bookmarks={favoritePrompts}
-                        onBookmarkSelect={handleBookmarkSelect}
-                        onBookmarkUpdateTitle={handleBookmarkUpdateTitle}
-                        onBookmarkDelete={handleBookmarkDelete}
-                        onBookmarkReorder={handleBookmarkReorder}
-                        isDarkMode={isDarkMode}
-                      />
-                    </div>
                   </>
                 )}
                 {messages.length > 0 && (
-                  <div
-                    className={`scrollbar-gutter-stable flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth p-2 ${isDarkMode ? 'bg-slate-900/80' : ''}`}>
-                    <MessageList messages={messages} isDarkMode={isDarkMode} />
-                    <div ref={messagesEndRef} />
-                  </div>
-                )}
-                {messages.length > 0 && (
-                  <div
-                    className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} p-2 shadow-sm backdrop-blur-sm`}>
-                    <ChatInput
-                      onSendMessage={handleSendMessage}
-                      onStopTask={handleStopTask}
-                      onMicClick={handleMicClick}
-                      isRecording={isRecording}
-                      isProcessingSpeech={isProcessingSpeech}
-                      disabled={!inputEnabled || isHistoricalSession}
-                      showStopButton={showStopButton}
-                      setContent={setter => {
-                        setInputTextRef.current = setter;
-                      }}
-                      isDarkMode={isDarkMode}
-                      historicalSessionId={isHistoricalSession && replayEnabled ? currentSessionId : null}
-                      onReplay={handleReplay}
-                    />
-                  </div>
+                  <>
+                    <div
+                      className={`scrollbar-gutter-stable flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth p-4`}>
+                      <MessageList messages={messages} isDarkMode={isDarkMode} />
+                      <div ref={messagesEndRef} />
+                    </div>
+                    <div
+                      className={`border-t ${
+                        isDarkMode ? 'border-neural-700/40' : 'border-neural-300/40'
+                      } p-4 backdrop-blur-sm`}>
+                      <ChatInput
+                        onSendMessage={handleSendMessage}
+                        onStopTask={handleStopTask}
+                        onMicClick={handleMicClick}
+                        isRecording={isRecording}
+                        isProcessingSpeech={isProcessingSpeech}
+                        disabled={!inputEnabled || isHistoricalSession}
+                        showStopButton={showStopButton}
+                        setContent={setter => {
+                          setInputTextRef.current = setter;
+                        }}
+                        isDarkMode={isDarkMode}
+                        historicalSessionId={isHistoricalSession && replayEnabled ? currentSessionId : null}
+                        onReplay={handleReplay}
+                      />
+                    </div>
+                  </>
                 )}
               </>
             )}

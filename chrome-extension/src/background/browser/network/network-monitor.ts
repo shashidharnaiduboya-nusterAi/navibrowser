@@ -144,7 +144,7 @@ export class NetworkMonitor {
    */
   async waitForRequests(urlPatterns: string[], timeout: number = 10000): Promise<boolean> {
     return new Promise(resolve => {
-      const startTime = Date.now();
+      // const startTime = Date.now(); // Currently unused
       const matchedRequests = new Set<string>();
 
       // Check existing completed requests

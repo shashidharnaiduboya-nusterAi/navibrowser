@@ -53,6 +53,17 @@ export const clickElementActionSchema: ActionSchema = {
   }),
 };
 
+export const doubleClickElementActionSchema: ActionSchema = {
+  name: 'double_click_element',
+  description:
+    'Double-click element by index. Use this for opening folders, files, or activating items that require double-click (especially useful for file managers and desktop-like interfaces)',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    index: z.number().int().describe('index of the element'),
+    xpath: z.string().nullable().optional().describe('xpath of the element'),
+  }),
+};
+
 export const inputTextActionSchema: ActionSchema = {
   name: 'input_text',
   description: 'Input text into an interactive input element',
@@ -176,6 +187,32 @@ export const scrollToTextActionSchema: ActionSchema = {
   }),
 };
 
+export const searchGoogleDriveActionSchema: ActionSchema = {
+  name: 'search_google_drive',
+  description:
+    'PREFERRED ACTION for finding files in Google Drive. Use this instead of manually browsing folders when looking for specific files. This action navigates to Google Drive (if not already there) and performs a search using the internal Google Drive search functionality. Much more efficient than clicking through folders manually.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    query: z.string().describe('search query for files/folders in Google Drive (e.g., "order.csv", "*.csv", "budget")'),
+    waitForResults: z.boolean().default(true).describe('whether to wait for search results to load'),
+  }),
+};
+
+export const searchInPageActionSchema: ActionSchema = {
+  name: 'search_in_page',
+  description:
+    'Universal search action for finding content within any webpage or application. Automatically detects and uses the most appropriate search method: search boxes, Ctrl+F, or application-specific search interfaces. Works across all platforms including cloud storage (Google Drive, Dropbox, OneDrive), file managers, and websites.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    query: z.string().describe('search query (e.g., "order.csv", "budget report", "specific text")'),
+    searchType: z
+      .enum(['auto', 'search_box', 'ctrl_f', 'platform_specific'])
+      .default('auto')
+      .describe('search method to use - auto detects best option'),
+    waitForResults: z.boolean().default(true).describe('whether to wait for search results to load'),
+  }),
+};
+
 export const sendKeysActionSchema: ActionSchema = {
   name: 'send_keys',
   description:
@@ -211,5 +248,76 @@ export const waitActionSchema: ActionSchema = {
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
     seconds: z.number().int().default(3).describe('amount of seconds'),
+  }),
+};
+
+// Document and Folder Verification Actions
+export const scanFolderForDocumentsActionSchema: ActionSchema = {
+  name: 'scan_folder_for_documents',
+  description:
+    'Scan a folder or directory (local file system, cloud storage like Google Drive, Dropbox, etc.) to inventory all documents and files. Works with file managers, cloud storage interfaces, and any folder-like interface.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    folderPath: z.string().optional().describe('path or name of the folder to scan (if known)'),
+    recursive: z.boolean().default(false).describe('whether to scan subfolders recursively'),
+    fileTypes: z
+      .array(z.string())
+      .optional()
+      .describe('specific file types to look for (e.g., ["pdf", "docx", "txt"])'),
+    waitForLoad: z.boolean().default(true).describe('wait for folder contents to fully load'),
+  }),
+};
+
+export const verifyDocumentChecklistActionSchema: ActionSchema = {
+  name: 'verify_document_checklist',
+  description:
+    'Compare discovered documents against a required checklist and identify missing documents. Analyzes the current folder/directory contents against a provided list of required documents.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    requiredDocuments: z.array(z.string()).describe('list of required document names or patterns'),
+    discoveredDocuments: z.array(z.string()).describe('list of documents found in the current scan'),
+    matchingStrategy: z
+      .enum(['exact', 'contains', 'pattern'])
+      .default('contains')
+      .describe('how to match document names'),
+    generateReport: z.boolean().default(true).describe('whether to generate a detailed missing documents report'),
+  }),
+};
+
+export const navigateToFolderActionSchema: ActionSchema = {
+  name: 'navigate_to_folder',
+  description:
+    'Navigate to a specific folder or directory in file managers, cloud storage (Google Drive, Dropbox, OneDrive), or file system interfaces. Handles both clicking folder icons and typing paths.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    folderName: z.string().describe('name or path of the folder to navigate to'),
+    navigationMethod: z.enum(['click', 'search', 'path']).default('click').describe('method to use for navigation'),
+    createIfMissing: z.boolean().default(false).describe('create folder if it does not exist'),
+  }),
+};
+
+export const extractDocumentListActionSchema: ActionSchema = {
+  name: 'extract_document_list',
+  description:
+    'Extract and list all documents visible in the current folder/directory view. Works with file managers, cloud storage interfaces, and document listing pages.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    includeMetadata: z.boolean().default(true).describe('include file size, date, type metadata'),
+    filterFileTypes: z.array(z.string()).optional().describe('only include specific file types'),
+    sortBy: z.enum(['name', 'date', 'size', 'type']).default('name').describe('how to sort the document list'),
+  }),
+};
+
+export const generateMissingDocumentsReportActionSchema: ActionSchema = {
+  name: 'generate_missing_documents_report',
+  description:
+    'Generate a comprehensive report of missing documents based on checklist verification. Provides structured output with missing items, found items, and recommendations.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    checklist: z.array(z.string()).describe('original required documents checklist'),
+    foundDocuments: z.array(z.string()).describe('documents that were found'),
+    missingDocuments: z.array(z.string()).describe('documents that are missing'),
+    includeRecommendations: z.boolean().default(true).describe('include suggestions for finding missing documents'),
+    outputFormat: z.enum(['structured', 'summary', 'detailed']).default('detailed').describe('format of the report'),
   }),
 };

@@ -1,5 +1,5 @@
 import { createLogger } from '@src/background/log';
-import { LoadingDetector } from '../loading/loading-detector';
+import type { LoadingDetector } from '../loading/loading-detector';
 
 const logger = createLogger('SPANavigator');
 
@@ -289,7 +289,7 @@ export class SPANavigator {
         };
 
         // Listen for popstate events
-        window.navibrowserRouteListener = (event: PopStateEvent) => {
+        window.navibrowserRouteListener = () => {
           const route = window.location.pathname + window.location.search + window.location.hash;
           window.navibrowserRouteChanges.push({
             oldRoute: window.navibrowserLastRoute || '',

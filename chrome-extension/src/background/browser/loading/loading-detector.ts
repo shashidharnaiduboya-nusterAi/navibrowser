@@ -1,6 +1,6 @@
 import { createLogger } from '@src/background/log';
-import { DOMObserver } from '../dom/observers/mutation-observer';
-import { NetworkMonitor } from '../network/network-monitor';
+import type { DOMObserver } from '../dom/observers/mutation-observer';
+import type { NetworkMonitor } from '../network/network-monitor';
 
 const logger = createLogger('LoadingDetector');
 
@@ -287,7 +287,7 @@ export class LoadingDetector {
       const result = await chrome.scripting.executeScript({
         target: { tabId: this.tabId },
         func: () => {
-          const url = window.location.href;
+          // const url = window.location.href; // Currently unused
           const hostname = window.location.hostname;
 
           if (hostname.includes('drive.google.com')) {

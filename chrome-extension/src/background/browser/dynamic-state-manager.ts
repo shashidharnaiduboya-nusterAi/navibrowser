@@ -142,8 +142,8 @@ export class DynamicStateManager {
   /**
    * Get loading detector instance
    */
-  getLoadingDetector(): LoadingDetector | undefined {
-    return this.loadingDetector;
+  getLoadingDetector(): LoadingDetector | null {
+    return this.loadingDetector || null;
   }
 
   /**
