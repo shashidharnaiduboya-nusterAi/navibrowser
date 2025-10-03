@@ -79,10 +79,10 @@ export interface BrowserContextConfig {
 }
 
 export const DEFAULT_BROWSER_CONTEXT_CONFIG: BrowserContextConfig = {
-  minimumWaitPageLoadTime: 0.25,
-  waitForNetworkIdlePageLoadTime: 0.5,
-  maximumWaitPageLoadTime: 5.0,
-  waitBetweenActions: 0.5,
+  minimumWaitPageLoadTime: 0.1, // Reduced for faster interactions
+  waitForNetworkIdlePageLoadTime: 0.3, // Reduced for faster interactions
+  maximumWaitPageLoadTime: 3.0, // Reduced timeout for faster response
+  waitBetweenActions: 0.2, // Reduced delay between actions
   browserWindowSize: { width: 1280, height: 1100 },
   viewportExpansion: 0,
   allowedUrls: [],

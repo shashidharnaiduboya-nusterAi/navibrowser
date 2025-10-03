@@ -483,6 +483,43 @@ export default class Page {
     }
   }
 
+  // Click at specific coordinates for visual-first interactions
+  async clickAt(x: number, y: number): Promise<void> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer page is not connected');
+    }
+    try {
+      await this._puppeteerPage.mouse.click(x, y);
+      logger.info(`Clicked at coordinates (${x}, ${y})`);
+    } catch (error) {
+      logger.error(`Failed to click at (${x}, ${y}):`, error);
+      throw error;
+    }
+  }
+
+  // Execute JavaScript directly for visual-first actions
+  async evaluateScript(script: string): Promise<any> {
+    if (!this._puppeteerPage) {
+      throw new Error('Puppeteer page is not connected');
+    }
+    try {
+      return await this._puppeteerPage.evaluate(script);
+    } catch (error) {
+      logger.error('Failed to evaluate script:', error);
+      throw error;
+    }
+  }
+
+  // Click element by index (compatibility method)
+  async clickElement(index: number): Promise<void> {
+    const state = await this.getState();
+    const elementNode = state?.selectorMap.get(index);
+    if (!elementNode) {
+      throw new Error(`Element with index ${index} not found`);
+    }
+    await this.clickElementNode(false, elementNode);
+  }
+
   url(): string {
     if (this._puppeteerPage) {
       return this._puppeteerPage.url();

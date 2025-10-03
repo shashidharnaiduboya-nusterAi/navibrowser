@@ -998,16 +998,8 @@ const SidePanel = () => {
 
   return (
     <div>
-      <div
-        className={`flex h-screen flex-col relative overflow-hidden ${
-          isDarkMode ? 'bg-neural-gradient-dark plasma-gradient-dark' : 'bg-neural-gradient plasma-gradient'
-        } ${isDarkMode ? 'glass-backdrop-dark neural-flow-bg' : 'glass-backdrop neural-flow-bg'} rounded-2xl ${
-          isDarkMode ? 'shadow-multi-glow-dark' : 'shadow-multi-glow'
-        } backdrop-blur-3xl border ${isDarkMode ? 'border-neural-700/30' : 'border-neural-300/40'}`}>
-        <header
-          className={`header relative ${
-            isDarkMode ? 'glass-backdrop-dark' : 'glass-backdrop'
-          } backdrop-blur-md border-b ${isDarkMode ? 'border-neural-600/30' : 'border-neural-200/50'} neural-glow`}>
+      <div className="flex h-screen flex-col relative overflow-hidden bg-white border border-gray-200 shadow-sm">
+        <header className="header relative bg-white border-b border-gray-200">
           <div className="header-logo">
             {showHistory ? (
               <button
@@ -1024,15 +1016,10 @@ const SidePanel = () => {
               </button>
             ) : (
               <div className="flex items-center gap-3">
-                <div
-                  className={`p-2 rounded-xl ${
-                    isDarkMode ? 'bg-neural-gradient-dark glass-backdrop-dark' : 'bg-neural-gradient glass-backdrop'
-                  } neural-glow animate-pulse-neural`}>
-                  <img src="/icon-128.png" alt="Nanobrowser" className="h-6 w-6" />
+                <div className="p-2 rounded-lg bg-white border border-gray-200 shadow-sm">
+                  <img src="/gsk-logo.png" alt="GSK" className="h-6 w-6 object-contain" />
                 </div>
-                <span className={`text-lg font-bold ${isDarkMode ? 'text-neural-100' : 'text-neural-900'}`}>
-                  Navibrowser
-                </span>
+                <span className="text-lg font-semibold text-gray-800">CRA Assistant</span>
               </div>
             )}
           </div>
@@ -1075,13 +1062,7 @@ const SidePanel = () => {
               type="button"
               onClick={() => chrome.runtime.openOptionsPage()}
               onKeyDown={e => e.key === 'Enter' && chrome.runtime.openOptionsPage()}
-              className={`header-icon ${
-                isDarkMode ? 'text-neural-300 hover:text-plasma-300' : 'text-neural-600 hover:text-plasma-600'
-              } cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-lg ${
-                isDarkMode
-                  ? 'hover:bg-glass-violet hover:shadow-plasma-dark'
-                  : 'hover:bg-glass-violet hover:shadow-plasma'
-              } backdrop-blur-sm shimmer neural-glow`}
+              className="header-icon text-gray-600 hover:text-gray-800 cursor-pointer transition-all duration-200 hover:scale-105 p-2 rounded-lg hover:bg-gray-100"
               aria-label={t('nav_settings_a11y')}
               tabIndex={0}>
               <FiSettings size={20} />
@@ -1124,33 +1105,21 @@ const SidePanel = () => {
                   isDarkMode ? 'text-neural-300' : 'text-neural-700'
                 }`}>
                 <div className="max-w-sm text-center">
-                  <div
-                    className={`mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl ${
-                      isDarkMode
-                        ? 'bg-neural-gradient-dark glass-backdrop-dark shadow-neural-dark'
-                        : 'bg-neural-gradient glass-backdrop shadow-neural'
-                    } neural-glow animate-pulse-neural`}>
-                    <img src="/icon-128.png" alt="Navibrowser" className="h-12 w-12" />
+                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-white border border-gray-200 shadow-lg">
+                    <img src="/gsk-logo.png" alt="GSK" className="h-12 w-12 object-contain" />
                   </div>
 
-                  <h3 className={`mb-3 text-xl font-bold ${isDarkMode ? 'text-neural-100' : 'text-neural-900'}`}>
-                    {t('welcome_title')}
-                  </h3>
+                  <h3 className="mb-3 text-xl font-bold text-gray-800">Welcome to CRA Assistant</h3>
 
-                  <p className={`mb-6 text-sm leading-relaxed ${isDarkMode ? 'text-neural-400' : 'text-neural-600'}`}>
-                    {t('welcome_instruction')}
+                  <p className="mb-6 text-sm leading-relaxed text-gray-600">
+                    Your intelligent assistant for clinical research activities. Get started by typing your task or
+                    question below.
                   </p>
 
                   <button
                     onClick={() => chrome.runtime.openOptionsPage()}
-                    className={`w-full rounded-xl px-6 py-3 font-semibold transition-all duration-300 ${
-                      isDarkMode
-                        ? 'bg-neural-gradient-dark glass-backdrop-dark text-neural-100 hover:shadow-neural-dark hover:scale-105'
-                        : 'bg-neural-gradient glass-backdrop text-white hover:shadow-neural hover:scale-105'
-                    } neural-glow shimmer backdrop-blur-lg border ${
-                      isDarkMode ? 'border-neural-600/30' : 'border-neural-300/50'
-                    }`}>
-                    {t('welcome_openSettings')}
+                    className="w-full rounded-lg px-6 py-3 font-semibold transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 hover:border-blue-700 shadow-sm hover:shadow-md">
+                    Configure Models
                   </button>
                 </div>
               </div>

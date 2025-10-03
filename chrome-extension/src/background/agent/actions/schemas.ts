@@ -198,6 +198,47 @@ export const searchGoogleDriveActionSchema: ActionSchema = {
   }),
 };
 
+export const googleDriveDirectAccessActionSchema: ActionSchema = {
+  name: 'google_drive_direct_access',
+  description:
+    'ULTRA-FAST Google Drive direct access using search URLs and keyboard shortcuts. Bypasses all UI clicking by using Google Drive URL patterns and Ctrl+F browser search for instant file/folder access.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    searchTerms: z
+      .array(z.string())
+      .describe('search terms to try in sequence (e.g., ["site105/patient001", "patient001", "site105"])'),
+    targetFiles: z.array(z.string()).optional().describe('specific files to look for in the directory'),
+    useUrlNavigation: z.boolean().default(true).describe('use direct URL navigation when possible'),
+    useKeyboardShortcuts: z.boolean().default(true).describe('use Ctrl+F and keyboard shortcuts for instant search'),
+  }),
+};
+
+export const googleDriveDocumentScanActionSchema: ActionSchema = {
+  name: 'google_drive_document_scan',
+  description:
+    'FAST document verification in Google Drive directories. Scans current view for specific documents and generates a comprehensive status table without slow navigation.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    requiredDocuments: z.array(z.string()).describe('list of required document names to check for'),
+    directoryContext: z.string().describe('context about the directory being scanned (e.g., "patient001 in site105")'),
+    generateTable: z.boolean().default(true).describe('generate a formatted table of document status'),
+    includeAlternativeNames: z.boolean().default(true).describe('check for similar document names and variations'),
+  }),
+};
+
+export const googleDrivePatientCheckActionSchema: ActionSchema = {
+  name: 'google_drive_patient_check',
+  description:
+    'COMPLETE one-shot action for patient document verification in Google Drive. Automatically navigates to patient directory and generates document status table. Perfect for clinical trial document compliance.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    siteId: z.string().describe('site identifier (e.g., "site105")'),
+    patientId: z.string().describe('patient identifier (e.g., "patient001")'),
+    requiredDocuments: z.array(z.string()).describe('list of required document names to check for'),
+    useAdvancedSearch: z.boolean().default(true).describe('use multiple search strategies for better results'),
+  }),
+};
+
 export const searchInPageActionSchema: ActionSchema = {
   name: 'search_in_page',
   description:
@@ -319,5 +360,105 @@ export const generateMissingDocumentsReportActionSchema: ActionSchema = {
     missingDocuments: z.array(z.string()).describe('documents that are missing'),
     includeRecommendations: z.boolean().default(true).describe('include suggestions for finding missing documents'),
     outputFormat: z.enum(['structured', 'summary', 'detailed']).default('detailed').describe('format of the report'),
+  }),
+};
+
+// Enhanced Visual-First Actions for Performance
+export const visualClickActionSchema: ActionSchema = {
+  name: 'visual_click',
+  description:
+    'FAST visual-first click action that uses screenshot analysis to identify and click elements without waiting for DOM parsing. Much faster than click_element for simple interactions.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    target: z
+      .string()
+      .describe('visual description of element to click (e.g., "blue Submit button", "search icon", "Login link")'),
+    confidence: z.number().min(0).max(1).default(0.8).describe('confidence threshold for element detection'),
+    waitAfterClick: z.number().default(0.5).describe('seconds to wait after clicking'),
+  }),
+};
+
+export const visualScrollActionSchema: ActionSchema = {
+  name: 'visual_scroll',
+  description:
+    'FAST visual-first scrolling that immediately scrolls without DOM analysis. Use this for quick navigation when you need to find content fast.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    direction: z.enum(['up', 'down', 'left', 'right']).describe('scroll direction'),
+    amount: z.enum(['small', 'medium', 'large', 'page']).default('medium').describe('scroll distance'),
+    speed: z.enum(['fast', 'normal', 'slow']).default('fast').describe('scroll speed for performance'),
+  }),
+};
+
+export const visualInputActionSchema: ActionSchema = {
+  name: 'visual_input',
+  description:
+    'FAST visual-first text input that identifies input fields visually and types without DOM parsing delays. Much faster than input_text.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    target: z
+      .string()
+      .describe('visual description of input field (e.g., "search box", "username field", "password input")'),
+    text: z.string().describe('text to input'),
+    clearFirst: z.boolean().default(true).describe('clear field before typing'),
+    confidence: z.number().min(0).max(1).default(0.8).describe('confidence threshold for field detection'),
+  }),
+};
+
+export const visualScanActionSchema: ActionSchema = {
+  name: 'visual_scan',
+  description:
+    'FAST visual-first content scanning that quickly analyzes the current screen for specific elements or content without building DOM tree. Returns visual elements found.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    searchFor: z
+      .array(z.string())
+      .describe('visual elements to look for (e.g., ["buttons", "input fields", "links", "images"])'),
+    includeText: z.boolean().default(true).describe('include text content in scan results'),
+    includeImages: z.boolean().default(false).describe('include image elements'),
+    fastMode: z.boolean().default(true).describe('use fast visual detection (recommended)'),
+  }),
+};
+
+export const visualNavigateActionSchema: ActionSchema = {
+  name: 'visual_navigate',
+  description:
+    'FAST visual-first navigation that combines quick scrolling and visual scanning to find content rapidly. Ideal for exploring pages efficiently.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    searchTarget: z
+      .string()
+      .describe('what to look for while navigating (e.g., "download button", "contact form", "pricing table")'),
+    maxScrolls: z.number().default(5).describe('maximum number of scroll attempts'),
+    scrollDirection: z.enum(['down', 'up']).default('down').describe('primary scroll direction'),
+    returnOnFirst: z.boolean().default(true).describe('stop on first match found'),
+  }),
+};
+
+// Hybrid Smart Actions that auto-select best approach
+export const smartClickActionSchema: ActionSchema = {
+  name: 'smart_click',
+  description:
+    'HYBRID smart clicking that automatically chooses between visual-first (fast) or DOM-based (precise) clicking based on page complexity and element visibility. Best of both worlds.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    target: z.string().describe('element to click - can be visual description OR text content'),
+    index: z.number().int().optional().describe('DOM index if known (optional)'),
+    preferVisual: z.boolean().default(true).describe('prefer visual approach when possible'),
+    confidence: z.number().min(0).max(1).default(0.8).describe('confidence threshold for visual detection'),
+  }),
+};
+
+export const smartInputActionSchema: ActionSchema = {
+  name: 'smart_input',
+  description:
+    'HYBRID smart text input that automatically chooses between visual-first (fast) or DOM-based (precise) input based on field complexity. Optimizes for speed while maintaining accuracy.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    target: z.string().describe('input field to target - can be visual description OR text content'),
+    text: z.string().describe('text to input'),
+    index: z.number().int().optional().describe('DOM index if known (optional)'),
+    clearFirst: z.boolean().default(true).describe('clear field before typing'),
+    preferVisual: z.boolean().default(true).describe('prefer visual approach when possible'),
   }),
 };

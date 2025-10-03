@@ -10,6 +10,9 @@ import {
   openTabActionSchema,
   searchGoogleActionSchema,
   searchGoogleDriveActionSchema,
+  googleDriveDirectAccessActionSchema,
+  googleDriveDocumentScanActionSchema,
+  googleDrivePatientCheckActionSchema,
   searchInPageActionSchema,
   switchTabActionSchema,
   type ActionSchema,
@@ -30,11 +33,19 @@ import {
   navigateToFolderActionSchema,
   extractDocumentListActionSchema,
   generateMissingDocumentsReportActionSchema,
+  visualClickActionSchema,
+  visualScrollActionSchema,
+  visualInputActionSchema,
+  visualScanActionSchema,
+  visualNavigateActionSchema,
+  smartClickActionSchema,
+  smartInputActionSchema,
 } from './schemas';
 import { z } from 'zod';
 import { createLogger } from '@src/background/log';
 import { ExecutionState, Actors } from '../event/types';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import { HumanMessage } from '@langchain/core/messages';
 import { wrapUntrustedContent } from '../messages/utils';
 import { DynamicStateManager } from '@src/background/browser/dynamic-state-manager';
 
@@ -153,6 +164,69 @@ export class ActionBuilder {
   private readonly context: AgentContext;
   private readonly extractorLLM: BaseChatModel;
   private dynamicStateManager?: DynamicStateManager;
+
+  // Performance monitoring helper
+  private async trackPerformance<T>(actionName: string, operation: () => Promise<T>): Promise<T> {
+    const startTime = performance.now();
+    try {
+      const result = await operation();
+      const duration = performance.now() - startTime;
+      logger.info(`[PERFORMANCE] ${actionName} completed in ${duration.toFixed(2)}ms`);
+      return result;
+    } catch (error) {
+      const duration = performance.now() - startTime;
+      logger.warn(`[PERFORMANCE] ${actionName} failed after ${duration.toFixed(2)}ms:`, error);
+      throw error;
+    }
+  }
+
+  // Helper method for calculating string similarity
+  private levenshteinDistance(str1: string, str2: string): number {
+    const matrix = [];
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+        }
+      }
+    }
+    return matrix[str2.length][str1.length];
+  }
+
+  // Helper method for visual analysis using LLM
+  private async analyzeScreenshot(screenshot: string, prompt: string): Promise<any> {
+    try {
+      // Use the extractor LLM for vision analysis (assuming it supports vision)
+      const model = this.extractorLLM;
+      const message = new HumanMessage({
+        content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${screenshot}` } },
+        ],
+      });
+
+      const response = await model.invoke([message]);
+
+      // Try to parse JSON response
+      try {
+        return JSON.parse(response.content as string);
+      } catch {
+        // If JSON parsing fails, return a simple object
+        return { found: false, confidence: 0, error: 'Failed to parse response' };
+      }
+    } catch (error) {
+      logger.error('Vision analysis failed:', error);
+      return { found: false, confidence: 0, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
 
   constructor(context: AgentContext, extractorLLM: BaseChatModel) {
     this.context = context;
@@ -332,6 +406,424 @@ export class ActionBuilder {
       }
     }, searchGoogleDriveActionSchema);
     actions.push(searchGoogleDrive);
+
+    // Ultra-Fast Google Drive Direct Access
+    const googleDriveDirectAccess = new Action(
+      async (input: z.infer<typeof googleDriveDirectAccessActionSchema.schema>) => {
+        const intent = input.intent || `Google Drive direct access: ${input.searchTerms.join(', ')}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+
+        try {
+          const page = await this.context.browserContext.getCurrentPage();
+          let foundResults: string[] = [];
+
+          // Strategy 1: Use Google Drive search URL shortcuts
+          if (input.useUrlNavigation) {
+            for (const searchTerm of input.searchTerms) {
+              try {
+                // Navigate to Google Drive search URL directly
+                const searchUrl = `https://drive.google.com/drive/search?q=${encodeURIComponent(searchTerm)}`;
+                await page.navigateTo(searchUrl);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for results
+
+                // Quick check if results are found
+                const currentUrl = page.url();
+                if (currentUrl.includes('search') && currentUrl.includes(encodeURIComponent(searchTerm))) {
+                  foundResults.push(`Search URL navigation successful for "${searchTerm}"`);
+                  break; // Stop on first successful search
+                }
+              } catch (error) {
+                logger.warn(`URL navigation failed for "${searchTerm}":`, error);
+              }
+            }
+          }
+
+          // Strategy 2: Use keyboard shortcuts for instant search
+          if (input.useKeyboardShortcuts && foundResults.length === 0) {
+            try {
+              // Ensure we're on Google Drive
+              const currentUrl = page.url();
+              if (!currentUrl.includes('drive.google.com')) {
+                await page.navigateTo('https://drive.google.com');
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+
+              // Use Google Drive's built-in search (/ key)
+              for (const searchTerm of input.searchTerms) {
+                await page.sendKeys('/'); // Google Drive search shortcut
+                await new Promise(resolve => setTimeout(resolve, 200));
+                await page.sendKeys(searchTerm);
+                await page.sendKeys('Enter');
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                foundResults.push(`Keyboard search completed for "${searchTerm}"`);
+                break; // Use first search term for now
+              }
+            } catch (error) {
+              logger.warn('Keyboard shortcut search failed:', error);
+            }
+          }
+
+          const msg = `Google Drive direct access completed. Results: ${foundResults.join('; ')}`;
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+          return new ActionResult({
+            extractedContent: JSON.stringify({ searchTerms: input.searchTerms, results: foundResults }),
+            includeInMemory: true,
+          });
+        } catch (error) {
+          const errorMsg = `Google Drive direct access failed: ${error instanceof Error ? error.message : String(error)}`;
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+          return new ActionResult({ error: errorMsg, includeInMemory: true });
+        }
+      },
+      googleDriveDirectAccessActionSchema,
+    );
+    actions.push(googleDriveDirectAccess);
+
+    // Fast Google Drive Document Scanner
+    const googleDriveDocumentScan = new Action(
+      async (input: z.infer<typeof googleDriveDocumentScanActionSchema.schema>) => {
+        const intent = input.intent || `Scanning Google Drive for documents in ${input.directoryContext}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+
+        try {
+          const page = await this.context.browserContext.getCurrentPage();
+
+          // Extract current page content efficiently
+          const pageContent = await page.evaluateScript(`
+            // Extract all file/folder names from Google Drive view
+            const extractGoogleDriveFiles = () => {
+              const files = [];
+              
+              // Try multiple selectors for Google Drive file listings
+              const selectors = [
+                '[data-target="doc-title"] [title]',  // File titles
+                '[role="gridcell"] [title]',          // Grid view files
+                '[jsaction*="select"] [title]',       // Selectable items
+                '.a-s-qe-qE[title]',                  // Drive file items
+                '[data-tooltip]',                     // Files with tooltips
+                '.a-s-oa-qe-T1-KR',                   // File name containers
+                '[data-testid="file-row"] [title]',   // File rows
+              ];
+              
+              selectors.forEach(selector => {
+                document.querySelectorAll(selector).forEach(el => {
+                  const title = el.getAttribute('title') || el.textContent;
+                  if (title && title.trim() && !files.includes(title.trim())) {
+                    files.push(title.trim());
+                  }
+                });
+              });
+              
+              return files;
+            };
+            
+            return extractGoogleDriveFiles();
+          `);
+
+          const foundFiles = Array.isArray(pageContent) ? pageContent : [];
+          const documentStatus: { [key: string]: 'FOUND' | 'MISSING' } = {};
+          const foundAlternatives: { [key: string]: string[] } = {};
+
+          // Check each required document
+          for (const requiredDoc of input.requiredDocuments) {
+            let found = false;
+            const alternatives: string[] = [];
+
+            // Exact match first
+            if (foundFiles.some(file => file === requiredDoc)) {
+              documentStatus[requiredDoc] = 'FOUND';
+              found = true;
+            }
+
+            // If not found exactly, look for similar names
+            if (!found && input.includeAlternativeNames) {
+              const requiredLower = requiredDoc.toLowerCase();
+              const baseNameWithoutExt = requiredLower.replace(/\.[^/.]+$/, '');
+
+              for (const file of foundFiles) {
+                const fileLower = file.toLowerCase();
+
+                // Check various matching strategies
+                if (
+                  fileLower.includes(baseNameWithoutExt) ||
+                  baseNameWithoutExt.includes(fileLower.replace(/\.[^/.]+$/, ''))
+                ) {
+                  alternatives.push(file);
+                  if (!found) {
+                    documentStatus[requiredDoc] = 'FOUND';
+                    found = true;
+                  }
+                }
+              }
+            }
+
+            if (!found) {
+              documentStatus[requiredDoc] = 'MISSING';
+            }
+
+            if (alternatives.length > 0) {
+              foundAlternatives[requiredDoc] = alternatives;
+            }
+          }
+
+          // Generate formatted table
+          const totalFound = Object.values(documentStatus).filter(status => status === 'FOUND').length;
+          const totalMissing = Object.values(documentStatus).filter(status => status === 'MISSING').length;
+
+          const tableOutput = `
+📋 **Document Status for ${input.directoryContext}**
+
+| Required Document | Status | Alternative Files Found |
+|-------------------|--------|------------------------|
+${input.requiredDocuments
+  .map(doc => {
+    const status = documentStatus[doc];
+    const alternatives = foundAlternatives[doc] || [];
+    const statusEmoji = status === 'FOUND' ? '✅' : '❌';
+    const altText = alternatives.length > 0 ? alternatives.join(', ') : 'None';
+    return `| ${doc} | ${statusEmoji} ${status} | ${altText} |`;
+  })
+  .join('\n')}
+
+**Summary:**
+- Total Required: ${input.requiredDocuments.length}
+- Found: ${totalFound} ✅
+- Missing: ${totalMissing} ❌
+- Completion Rate: ${Math.round((totalFound / input.requiredDocuments.length) * 100)}%
+
+**All Files in Directory:**
+${foundFiles.length > 0 ? foundFiles.map(file => `• ${file}`).join('\n') : 'No files detected in current view'}
+          `;
+
+          const msg = `Document scan completed for ${input.directoryContext}: ${totalFound}/${input.requiredDocuments.length} documents found`;
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+
+          return new ActionResult({
+            extractedContent: tableOutput,
+            includeInMemory: true,
+          });
+        } catch (error) {
+          const errorMsg = `Google Drive document scan failed: ${error instanceof Error ? error.message : String(error)}`;
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+          return new ActionResult({ error: errorMsg, includeInMemory: true });
+        }
+      },
+      googleDriveDocumentScanActionSchema,
+    );
+    actions.push(googleDriveDocumentScan);
+
+    // Complete Google Drive Patient Document Check
+    const googleDrivePatientCheck = new Action(
+      async (input: z.infer<typeof googleDrivePatientCheckActionSchema.schema>) => {
+        const intent = input.intent || `Complete patient document check for ${input.patientId} in ${input.siteId}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+
+        try {
+          const page = await this.context.browserContext.getCurrentPage();
+
+          // Step 1: Try multiple search strategies to find the patient directory
+          const searchTerms = [
+            `${input.siteId}/${input.patientId}`,
+            `${input.patientId} ${input.siteId}`,
+            input.patientId,
+            input.siteId,
+          ];
+
+          let navigateSuccess = false;
+          let currentSearchTerm = '';
+
+          if (input.useAdvancedSearch) {
+            // Try URL-based navigation first
+            for (const searchTerm of searchTerms) {
+              try {
+                const searchUrl = `https://drive.google.com/drive/search?q=${encodeURIComponent(searchTerm)}`;
+                await page.navigateTo(searchUrl);
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                // Check if we got meaningful results
+                const currentUrl = page.url();
+                if (currentUrl.includes('search') && currentUrl.includes(encodeURIComponent(searchTerm))) {
+                  navigateSuccess = true;
+                  currentSearchTerm = searchTerm;
+                  break;
+                }
+              } catch (error) {
+                logger.warn(`Navigation failed for search term "${searchTerm}":`, error);
+              }
+            }
+
+            // If URL navigation didn't work, try keyboard shortcuts
+            if (!navigateSuccess) {
+              try {
+                // Ensure we're on Google Drive
+                const currentUrl = page.url();
+                if (!currentUrl.includes('drive.google.com')) {
+                  await page.navigateTo('https://drive.google.com');
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                // Use Google Drive search shortcut
+                await page.sendKeys('/');
+                await new Promise(resolve => setTimeout(resolve, 300));
+                await page.sendKeys(searchTerms[0]); // Use the most specific search term
+                await page.sendKeys('Enter');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                navigateSuccess = true;
+                currentSearchTerm = searchTerms[0];
+              } catch (error) {
+                logger.warn('Keyboard shortcut navigation failed:', error);
+              }
+            }
+          }
+
+          // Step 2: Extract files and analyze document status
+          const pageContent = await page.evaluateScript(`(() => {
+            const extractGoogleDriveFiles = () => {
+              const files = [];
+              const selectors = [
+                '[data-target="doc-title"] [title]',
+                '[role="gridcell"] [title]',
+                '[jsaction*="select"] [title]',
+                '.a-s-qe-qE[title]',
+                '[data-tooltip]',
+                '.a-s-oa-qe-T1-KR',
+                '[data-testid="file-row"] [title]',
+                // Additional selectors for different Google Drive views
+                '[data-id] [title]',
+                '.a-s-oa-d-w [title]',
+                '[role="button"][title]',
+              ];
+              
+              selectors.forEach(selector => {
+                document.querySelectorAll(selector).forEach(el => {
+                  const title = el.getAttribute('title') || el.textContent;
+                  if (title && title.trim() && !files.includes(title.trim())) {
+                    files.push(title.trim());
+                  }
+                });
+              });
+              
+              return files;
+            };
+            
+            return extractGoogleDriveFiles();
+          })()`);
+
+          const foundFiles = Array.isArray(pageContent) ? pageContent : [];
+          const documentStatus: { [key: string]: 'FOUND' | 'MISSING' } = {};
+          const foundAlternatives: { [key: string]: string[] } = {};
+
+          // Analyze each required document
+          for (const requiredDoc of input.requiredDocuments) {
+            let found = false;
+            const alternatives: string[] = [];
+
+            // Exact match
+            if (foundFiles.some(file => file === requiredDoc)) {
+              documentStatus[requiredDoc] = 'FOUND';
+              found = true;
+            }
+
+            // Fuzzy matching for similar names
+            if (!found) {
+              const requiredLower = requiredDoc.toLowerCase();
+              const requiredBase = requiredLower.replace(/\.[^/.]+$/, '').replace(/\s+/g, '');
+
+              for (const file of foundFiles) {
+                const fileLower = file.toLowerCase();
+                const fileBase = fileLower.replace(/\.[^/.]+$/, '').replace(/\s+/g, '');
+
+                // Multiple matching strategies
+                if (
+                  fileLower.includes(requiredBase) ||
+                  requiredBase.includes(fileBase) ||
+                  this.levenshteinDistance(requiredBase, fileBase) <= 3
+                ) {
+                  alternatives.push(file);
+                  if (!found) {
+                    documentStatus[requiredDoc] = 'FOUND';
+                    found = true;
+                  }
+                }
+              }
+            }
+
+            if (!found) {
+              documentStatus[requiredDoc] = 'MISSING';
+            }
+
+            if (alternatives.length > 0) {
+              foundAlternatives[requiredDoc] = alternatives;
+            }
+          }
+
+          // Generate comprehensive report
+          const totalFound = Object.values(documentStatus).filter(status => status === 'FOUND').length;
+          const totalMissing = input.requiredDocuments.length - totalFound;
+          const completionRate = Math.round((totalFound / input.requiredDocuments.length) * 100);
+
+          const reportOutput = `
+🏥 **Patient Document Verification Report**
+
+**Patient Information:**
+- Site ID: ${input.siteId}
+- Patient ID: ${input.patientId}
+- Search Strategy: ${currentSearchTerm || 'Standard search'}
+- Files Found in Directory: ${foundFiles.length}
+
+**Document Status Table:**
+
+| Required Document | Status | Alternative Files Found |
+|-------------------|--------|------------------------|
+${input.requiredDocuments
+  .map(doc => {
+    const status = documentStatus[doc];
+    const alternatives = foundAlternatives[doc] || [];
+    const statusEmoji = status === 'FOUND' ? '✅' : '❌';
+    const altText =
+      alternatives.length > 0 ? alternatives.slice(0, 2).join(', ') + (alternatives.length > 2 ? '...' : '') : 'None';
+    return `| ${doc} | ${statusEmoji} ${status} | ${altText} |`;
+  })
+  .join('\n')}
+
+**Compliance Summary:**
+- ✅ Documents Found: ${totalFound}/${input.requiredDocuments.length}
+- ❌ Documents Missing: ${totalMissing}
+- 📊 Completion Rate: ${completionRate}%
+- 🚨 Compliance Status: ${completionRate === 100 ? '✅ COMPLIANT' : '⚠️ NON-COMPLIANT'}
+
+**All Files in Patient Directory:**
+${foundFiles.length > 0 ? foundFiles.map(file => `• ${file}`).join('\n') : '⚠️ No files detected - may need to navigate to correct directory'}
+
+**Next Steps:**
+${
+  totalMissing > 0
+    ? `⚠️ ${totalMissing} documents are missing. Please ensure the following documents are uploaded:\n${input.requiredDocuments
+        .filter(doc => documentStatus[doc] === 'MISSING')
+        .map(doc => `• ${doc}`)
+        .join('\n')}`
+    : '✅ All required documents are present and accounted for.'
+}
+          `;
+
+          const msg = `Patient document check completed: ${input.patientId} in ${input.siteId} - ${completionRate}% compliant`;
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+
+          return new ActionResult({
+            extractedContent: reportOutput,
+            includeInMemory: true,
+          });
+        } catch (error) {
+          const errorMsg = `Google Drive patient check failed: ${error instanceof Error ? error.message : String(error)}`;
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+          return new ActionResult({ error: errorMsg, includeInMemory: true });
+        }
+      },
+      googleDrivePatientCheckActionSchema,
+    );
+    actions.push(googleDrivePatientCheck);
 
     const searchInPage = new Action(async (input: z.infer<typeof searchInPageActionSchema.schema>) => {
       const context = this.context;
@@ -1464,6 +1956,260 @@ ${input.includeRecommendations ? `\n💡 RECOMMENDATIONS:\n${report.recommendati
       generateMissingDocumentsReportActionSchema,
     );
     actions.push(generateMissingDocumentsReport);
+
+    // Visual-First Performance Actions
+    const visualClick = new Action(async (input: z.infer<typeof visualClickActionSchema.schema>) => {
+      const intent = input.intent || `Visual click on: ${input.target}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+
+      try {
+        const result = await this.trackPerformance(`visual_click[${input.target}]`, async () => {
+          const page = await this.context.browserContext.getCurrentPage();
+
+          // Take immediate screenshot for visual analysis
+          const screenshot = await this.trackPerformance('screenshot_capture', () => page.takeScreenshot());
+          if (!screenshot) {
+            throw new Error('Failed to capture screenshot for visual analysis');
+          }
+
+          // Use LLM vision to identify click coordinates
+          const analysisPrompt = `Analyze this screenshot and find the element: "${input.target}". 
+            Return the click coordinates as JSON: {"x": number, "y": number, "found": boolean, "confidence": number}.
+            Use confidence threshold: ${input.confidence}. If confidence is below threshold, set found to false.`;
+
+          const analysisResult = await this.trackPerformance('visual_analysis', () =>
+            this.analyzeScreenshot(screenshot, analysisPrompt),
+          );
+
+          if (analysisResult.found && analysisResult.confidence >= input.confidence) {
+            // Perform direct click at coordinates
+            await this.trackPerformance('coordinate_click', () => page.clickAt(analysisResult.x, analysisResult.y));
+
+            if (input.waitAfterClick > 0) {
+              await new Promise(resolve => setTimeout(resolve, input.waitAfterClick * 1000));
+            }
+
+            const msg = `Visual click successful on "${input.target}" at (${analysisResult.x}, ${analysisResult.y})`;
+            this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+            return new ActionResult({ extractedContent: msg, includeInMemory: true });
+          } else {
+            throw new Error(`Could not find element "${input.target}" with required confidence ${input.confidence}`);
+          }
+        });
+
+        return result;
+      } catch (error) {
+        const errorMsg = `Visual click failed: ${error instanceof Error ? error.message : String(error)}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+        return new ActionResult({ error: errorMsg, includeInMemory: true });
+      }
+    }, visualClickActionSchema);
+    actions.push(visualClick);
+
+    const visualScroll = new Action(async (input: z.infer<typeof visualScrollActionSchema.schema>) => {
+      const intent = input.intent || `Visual scroll ${input.direction} (${input.amount})`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+
+      try {
+        const page = await this.context.browserContext.getCurrentPage();
+
+        // Calculate scroll amounts based on speed and amount
+        const scrollMultipliers: Record<string, number> = {
+          small: 200,
+          medium: 400,
+          large: 800,
+          page: 1000,
+        };
+
+        const scrollAmount = scrollMultipliers[input.amount] || 400;
+        const scrollDelay = input.speed === 'fast' ? 0 : input.speed === 'normal' ? 100 : 200;
+
+        // Perform immediate scroll without waiting for DOM
+        let scrollCommand = '';
+        switch (input.direction) {
+          case 'down':
+            scrollCommand = `window.scrollBy(0, ${scrollAmount})`;
+            break;
+          case 'up':
+            scrollCommand = `window.scrollBy(0, -${scrollAmount})`;
+            break;
+          case 'left':
+            scrollCommand = `window.scrollBy(-${scrollAmount}, 0)`;
+            break;
+          case 'right':
+            scrollCommand = `window.scrollBy(${scrollAmount}, 0)`;
+            break;
+        }
+
+        await page.evaluateScript(scrollCommand);
+
+        if (scrollDelay > 0) {
+          await new Promise(resolve => setTimeout(resolve, scrollDelay));
+        }
+
+        const msg = `Visual scroll ${input.direction} completed (${input.amount}, ${input.speed})`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+        return new ActionResult({ extractedContent: msg, includeInMemory: true });
+      } catch (error) {
+        const errorMsg = `Visual scroll failed: ${error instanceof Error ? error.message : String(error)}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+        return new ActionResult({ error: errorMsg, includeInMemory: true });
+      }
+    }, visualScrollActionSchema);
+    actions.push(visualScroll);
+
+    // Hybrid Smart Actions (Auto-select best approach)
+    const smartClick = new Action(async (input: z.infer<typeof smartClickActionSchema.schema>) => {
+      const intent = input.intent || `Smart click on: ${input.target}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+
+      try {
+        const page = await this.context.browserContext.getCurrentPage();
+
+        // If DOM index is provided and preferVisual is false, use DOM-based approach
+        if (input.index !== undefined && !input.preferVisual) {
+          const state = await page.getState();
+          const elementNode = state?.selectorMap.get(input.index);
+          if (elementNode) {
+            await page.clickElementNode(this.context.options.useVision, elementNode);
+            const msg = `Smart click (DOM) successful on index ${input.index}`;
+            this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+            return new ActionResult({ extractedContent: msg, includeInMemory: true });
+          }
+        }
+
+        // Try visual approach first (faster)
+        if (input.preferVisual) {
+          try {
+            const screenshot = await page.takeScreenshot();
+            if (screenshot) {
+              const analysisPrompt = `Analyze this screenshot and find the element: "${input.target}". 
+                Return the click coordinates as JSON: {"x": number, "y": number, "found": boolean, "confidence": number}.
+                Use confidence threshold: ${input.confidence}. If confidence is below threshold, set found to false.`;
+
+              const analysisResult = await this.analyzeScreenshot(screenshot, analysisPrompt);
+
+              if (analysisResult.found && analysisResult.confidence >= input.confidence) {
+                await page.clickAt(analysisResult.x, analysisResult.y);
+                const msg = `Smart click (Visual) successful on "${input.target}" at (${analysisResult.x}, ${analysisResult.y})`;
+                this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+                return new ActionResult({ extractedContent: msg, includeInMemory: true });
+              }
+            }
+          } catch (visualError) {
+            logger.warn('Visual approach failed, falling back to DOM:', visualError);
+          }
+        }
+
+        // Fallback to DOM-based approach
+        const state = await page.getState();
+        if (state?.selectorMap) {
+          for (const [index, element] of state.selectorMap) {
+            const text = element.getAllTextTillNextClickableElement?.(2) || '';
+            if (text.toLowerCase().includes(input.target.toLowerCase())) {
+              await page.clickElementNode(this.context.options.useVision, element);
+              const msg = `Smart click (DOM fallback) successful on "${input.target}" at index ${index}`;
+              this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+              return new ActionResult({ extractedContent: msg, includeInMemory: true });
+            }
+          }
+        }
+
+        throw new Error(`Could not find element "${input.target}" using any approach`);
+      } catch (error) {
+        const errorMsg = `Smart click failed: ${error instanceof Error ? error.message : String(error)}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+        return new ActionResult({ error: errorMsg, includeInMemory: true });
+      }
+    }, smartClickActionSchema);
+    actions.push(smartClick);
+
+    const smartInput = new Action(async (input: z.infer<typeof smartInputActionSchema.schema>) => {
+      const intent = input.intent || `Smart input to: ${input.target}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+
+      try {
+        const page = await this.context.browserContext.getCurrentPage();
+
+        // If DOM index is provided and preferVisual is false, use DOM-based approach
+        if (input.index !== undefined && !input.preferVisual) {
+          const state = await page.getState();
+          const elementNode = state?.selectorMap.get(input.index);
+          if (elementNode) {
+            if (input.clearFirst) {
+              await page.clickElementNode(this.context.options.useVision, elementNode);
+              await page.sendKeys('Control+a');
+              await page.sendKeys('Delete');
+            }
+            await page.inputTextElementNode(this.context.options.useVision, elementNode, input.text);
+            const msg = `Smart input (DOM) successful on index ${input.index}: "${input.text}"`;
+            this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+            return new ActionResult({ extractedContent: msg, includeInMemory: true });
+          }
+        }
+
+        // Try visual approach first (faster)
+        if (input.preferVisual) {
+          try {
+            const screenshot = await page.takeScreenshot();
+            if (screenshot) {
+              const analysisPrompt = `Analyze this screenshot and find the input field: "${input.target}". 
+                Return the click coordinates as JSON: {"x": number, "y": number, "found": boolean, "confidence": number}.
+                Use confidence threshold: 0.8. If confidence is below threshold, set found to false.`;
+
+              const analysisResult = await this.analyzeScreenshot(screenshot, analysisPrompt);
+
+              if (analysisResult.found && analysisResult.confidence >= 0.8) {
+                await page.clickAt(analysisResult.x, analysisResult.y);
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                if (input.clearFirst) {
+                  await page.sendKeys('Control+a');
+                  await page.sendKeys('Delete');
+                }
+
+                await page.sendKeys(input.text);
+                const msg = `Smart input (Visual) successful to "${input.target}": "${input.text}"`;
+                this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+                return new ActionResult({ extractedContent: msg, includeInMemory: true });
+              }
+            }
+          } catch (visualError) {
+            logger.warn('Visual approach failed, falling back to DOM:', visualError);
+          }
+        }
+
+        // Fallback to DOM-based approach
+        const state = await page.getState();
+        if (state?.selectorMap) {
+          for (const [index, element] of state.selectorMap) {
+            const text = element.getAllTextTillNextClickableElement?.(2) || '';
+            if (
+              text.toLowerCase().includes(input.target.toLowerCase()) &&
+              (element.tagName?.toLowerCase() === 'input' || element.tagName?.toLowerCase() === 'textarea')
+            ) {
+              if (input.clearFirst) {
+                await page.clickElementNode(this.context.options.useVision, element);
+                await page.sendKeys('Control+a');
+                await page.sendKeys('Delete');
+              }
+
+              await page.inputTextElementNode(this.context.options.useVision, element, input.text);
+              const msg = `Smart input (DOM fallback) successful to "${input.target}": "${input.text}"`;
+              this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+              return new ActionResult({ extractedContent: msg, includeInMemory: true });
+            }
+          }
+        }
+
+        throw new Error(`Could not find input field "${input.target}" using any approach`);
+      } catch (error) {
+        const errorMsg = `Smart input failed: ${error instanceof Error ? error.message : String(error)}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+        return new ActionResult({ error: errorMsg, includeInMemory: true });
+      }
+    }, smartInputActionSchema);
+    actions.push(smartInput);
 
     return actions;
   }

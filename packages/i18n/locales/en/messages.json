@@ -1,11 +1,11 @@
 {
   "app_metadata_description": {
     "description": "Extension description",
-    "message": "Automate web tasks with AI! Navibrowser is an open-source Chrome extension that lets you extract data, fill forms, and more."
+    "message": "Clinical Research Assistant powered by AI! CRA Assistant is an open-source Chrome extension that helps automate clinical research workflows, document verification, and data collection."
   },
   "app_metadata_name": {
     "description": "Extension name",
-    "message": "Navibrowser: AI Web Agent & Automation"
+    "message": "CRA Assistant: AI Clinical Research Tool"
   },
   "errors_unknown": {
     "message": "Unknown error occurred"
@@ -38,7 +38,7 @@
     "message": "Back to chat"
   },
   "welcome_title": {
-    "message": "Welcome to Navibrowser!"
+    "message": "Welcome to CRA Assistant!"
   },
   "welcome_instruction": {
     "message": "To get started, please configure your API keys in the settings page."
@@ -167,7 +167,7 @@
     "message": "Enable Voice Input"
   },
   "permissions_microphone_description": {
-    "message": "Navibrowser needs microphone access to convert your speech to text."
+    "message": "CRA Assistant needs microphone access to convert your speech to text."
   },
   "permissions_microphone_grantButton": {
     "message": "Grant Microphone Permission"

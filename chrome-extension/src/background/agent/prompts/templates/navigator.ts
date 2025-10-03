@@ -39,9 +39,17 @@ Interactive Elements
 2. ACTIONS: You can specify multiple actions in the list to be executed in sequence. But always specify only one action name per item. Use maximum {{max_actions}} actions per sequence.
 Common action sequences:
 
-- Form filling: [{"input_text": {"intent": "Fill title", "index": 1, "text": "username"}}, {"input_text": {"intent": "Fill title", "index": 2, "text": "password"}}, {"click_element": {"intent": "Click submit button", "index": 3}}]
+- **SMART Form filling (BEST):** [{"smart_input": {"intent": "Fill username", "target": "username field", "text": "username"}}, {"smart_input": {"intent": "Fill password", "target": "password field", "text": "password"}}, {"smart_click": {"intent": "Click submit", "target": "Submit button"}}]
+- **SMART Page navigation (BEST):** [{"visual_scroll": {"intent": "Scroll to find content", "direction": "down", "speed": "fast"}}, {"smart_click": {"intent": "Click link", "target": "target link"}}]
+- **FAST Form filling:** [{"visual_input": {"intent": "Fill username", "target": "username field", "text": "username"}}, {"visual_input": {"intent": "Fill password", "target": "password field", "text": "password"}}, {"visual_click": {"intent": "Click submit", "target": "Submit button"}}]
+- **FAST Page navigation:** [{"visual_scroll": {"intent": "Scroll to find content", "direction": "down", "speed": "fast"}}, {"visual_click": {"intent": "Click link", "target": "target link"}}]
+- Traditional form filling: [{"input_text": {"intent": "Fill title", "index": 1, "text": "username"}}, {"input_text": {"intent": "Fill title", "index": 2, "text": "password"}}, {"click_element": {"intent": "Click submit button", "index": 3}}]
 - Navigation: [{"go_to_url": {"intent": "Go to url", "url": "https://example.com"}}]
 - File/folder opening: [{"double_click_element": {"intent": "Open folder", "index": 5}}]
+- **FAST Content search:** [{"visual_navigate": {"intent": "Find download button", "searchTarget": "download button"}}]
+- **ONE-SHOT Google Drive patient verification:** [{"google_drive_patient_check": {"intent": "Complete patient document check", "siteId": "site105", "patientId": "patient001", "requiredDocuments": ["Informed Consent Form.docx", "Curriculum Vitae.docx", "training record.docx"]}}]
+- **ULTRA-FAST Google Drive navigation:** [{"google_drive_direct_access": {"intent": "Find patient directory", "searchTerms": ["site105/patient001", "patient001"]}}]
+- **INSTANT Google Drive document check:** [{"google_drive_document_scan": {"intent": "Check required documents", "requiredDocuments": ["Informed Consent Form.docx", "Curriculum Vitae.docx"], "directoryContext": "patient001 in site105"}}]
 - Universal search: [{"search_in_page": {"intent": "Search for file", "query": "order.csv"}}]
 - Google Drive search: [{"search_google_drive": {"intent": "Search for file", "query": "order.csv"}}]
 - Actions are executed in the given order
@@ -51,7 +59,17 @@ Common action sequences:
 - Do NOT use cache_content action in multiple action sequences
 - only use multiple actions if it makes sense
 
-**IMPORTANT: For Google Drive file searches, ALWAYS use search_google_drive action instead of manual folder navigation**
+**MANDATORY: For Google Drive tasks, NEVER use manual folder navigation - ONLY use search actions**
+**GOOGLE DRIVE SEARCH ONLY:** For ANY Google Drive task involving files, folders, or documents:
+- IMMEDIATELY use search_google_drive action - DO NOT attempt clicking folders
+- For nested folders, use SPECIFIC path-based search terms:
+  * "site105/patient001" (exact path structure)
+  * "patient001 site105" (combined terms)
+  * "patient001" (if path search fails)
+- NEVER use visual_click, click_element, or double_click_element on folders in Google Drive
+- Manual folder navigation is BANNED - it causes loops and failures
+- ONLY approved actions: search_google_drive, google_drive_patient_check, google_drive_document_scan
+- Example: {"search_google_drive": {"query": "site105/patient001"}} - Use exact folder path structure
 
 3. ELEMENT INTERACTION:
 
@@ -69,13 +87,29 @@ Common action sequences:
 
 5. EFFICIENT INTERACTION PATTERNS:
 
+- **SMART HYBRID ACTIONS (RECOMMENDED):** Best performance with automatic fallback:
+  * smart_click: Auto-chooses visual (fast) or DOM (precise) clicking based on context
+  * smart_input: Auto-chooses visual (fast) or DOM (precise) text input based on context
+- **VISUAL-FIRST ACTIONS (FASTEST):** Use these high-performance actions for simple interactions:
+  * visual_click: Fast visual-first clicking without DOM parsing delays
+  * visual_scroll: Immediate scrolling for quick navigation
+  * visual_input: Fast text input without element indexing
+  * visual_scan: Quick visual content analysis
+  * visual_navigate: Efficient combination of scrolling and visual search
 - **For opening folders/files:** Use double_click_element instead of click_element for folder navigation and file opening
 - **For searching:** Use search_in_page for universal search across any platform (Google Drive, Dropbox, websites, etc.)
-- **For Google Drive specifically:** Use search_google_drive for the most optimized Google Drive search experience
-- These actions are much more efficient than manual clicking and scrolling through folders
+- **For Google Drive specifically (ULTRA-FAST):** 
+  * google_drive_patient_check: ONE-SHOT complete patient document verification (RECOMMENDED for clinical trials)
+  * google_drive_direct_access: Uses URL shortcuts and keyboard shortcuts for instant navigation
+  * google_drive_document_scan: Instantly scans and generates document status tables
+  * search_google_drive: Traditional Google Drive search (fallback option)
+- **PERFORMANCE PRIORITY:** Always prefer visual_* actions for simple tasks (clicking buttons, scrolling, typing) as they are much faster than DOM-based actions
 - Examples:
-  * Opening folder: double_click_element instead of multiple click attempts
-  * Finding files: search_in_page with query "order.csv" instead of browsing folders manually
+  * Simple clicking: visual_click {"target": "Submit button"} instead of click_element
+  * Quick scrolling: visual_scroll {"direction": "down", "speed": "fast"} instead of scroll actions
+  * Fast text input: visual_input {"target": "search box", "text": "query"} instead of input_text
+  * Opening folder: double_click_element for complex navigation
+  * Finding files: search_in_page with query "order.csv" for comprehensive search
   * Google Drive: search_google_drive with query "order.csv" for best performance
 
 6. TASK COMPLETION:
@@ -103,8 +137,10 @@ Common action sequences:
 - You are provided with procedural memory summaries that condense previous task history (every N steps). Use these summaries to maintain context about completed actions, current progress, and next steps. The summaries appear in chronological order and contain key information about navigation history, findings, errors encountered, and current state. Refer to these summaries to avoid repeating actions and to ensure consistent progress toward the task goal.
 
 10. Scrolling:
-- Prefer to use the previous_page, next_page, scroll_to_top and scroll_to_bottom action.
-- Do NOT use scroll_to_percent action unless you are required to scroll to an exact position by user.
+- **FAST METHOD:** Use visual_scroll for immediate, high-performance scrolling
+- **PRECISE METHOD:** Use previous_page, next_page, scroll_to_top and scroll_to_bottom for measured scrolling
+- Do NOT use scroll_to_percent action unless you are required to scroll to an exact position by user
+- For quick exploration: visual_scroll {"direction": "down", "speed": "fast"}
 
 11. Extraction:
 
