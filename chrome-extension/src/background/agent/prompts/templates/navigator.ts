@@ -47,9 +47,9 @@ Common action sequences:
 - Navigation: [{"go_to_url": {"intent": "Go to url", "url": "https://example.com"}}]
 - File/folder opening: [{"double_click_element": {"intent": "Open folder", "index": 5}}]
 - **FAST Content search:** [{"visual_navigate": {"intent": "Find download button", "searchTarget": "download button"}}]
-- **ONE-SHOT Google Drive patient verification:** [{"google_drive_patient_check": {"intent": "Complete patient document check", "siteId": "site105", "patientId": "patient001", "requiredDocuments": ["Informed Consent Form.docx", "Curriculum Vitae.docx", "training record.docx"]}}]
-- **ULTRA-FAST Google Drive navigation:** [{"google_drive_direct_access": {"intent": "Find patient directory", "searchTerms": ["site105/patient001", "patient001"]}}]
-- **INSTANT Google Drive document check:** [{"google_drive_document_scan": {"intent": "Check required documents", "requiredDocuments": ["Informed Consent Form.docx", "Curriculum Vitae.docx"], "directoryContext": "patient001 in site105"}}]
+- **INSTANT SharePoint patient verification:** [{"sharepoint_patient_check": {"intent": "Analyze current screen for patient documents", "siteId": "Site 105", "patientId": "Patient 01", "requiredDocuments": ["ICF", "CV", "training records"]}}]
+- **COMPREHENSIVE SharePoint multi-patient check:** [{"sharepoint_multi_patient_check": {"intent": "Analyze all patient folders on current screen", "siteId": "Site 105", "requiredDocuments": ["ICF", "CV", "training records"]}}]
+- **FAST SharePoint document scan:** [{"sharepoint_document_scan": {"intent": "Check documents in current view", "requiredDocuments": ["ICF", "CV"], "directoryContext": "Patient 01 in Site 105"}}]
 - Universal search: [{"search_in_page": {"intent": "Search for file", "query": "order.csv"}}]
 - Google Drive search: [{"search_google_drive": {"intent": "Search for file", "query": "order.csv"}}]
 - Actions are executed in the given order
@@ -59,17 +59,18 @@ Common action sequences:
 - Do NOT use cache_content action in multiple action sequences
 - only use multiple actions if it makes sense
 
-**MANDATORY: For Google Drive tasks, NEVER use manual folder navigation - ONLY use search actions**
-**GOOGLE DRIVE SEARCH ONLY:** For ANY Google Drive task involving files, folders, or documents:
-- IMMEDIATELY use search_google_drive action - DO NOT attempt clicking folders
-- For nested folders, use SPECIFIC path-based search terms:
-  * "site105/patient001" (exact path structure)
-  * "patient001 site105" (combined terms)
-  * "patient001" (if path search fails)
-- NEVER use visual_click, click_element, or double_click_element on folders in Google Drive
-- Manual folder navigation is BANNED - it causes loops and failures
-- ONLY approved actions: search_google_drive, google_drive_patient_check, google_drive_document_scan
-- Example: {"search_google_drive": {"query": "site105/patient001"}} - Use exact folder path structure
+**MANDATORY: For SharePoint tasks, NEVER use manual navigation - ONLY use screen-analysis actions**
+**SHAREPOINT SCREEN-ONLY ANALYSIS:** For ANY SharePoint task involving files, folders, or document checking:
+- ❌ ABSOLUTELY FORBIDDEN: visual_click, click_element, double_click_element, or any navigation on SharePoint
+- ❌ ABSOLUTELY FORBIDDEN: Manual folder clicking or searching
+- ✅ MANDATORY: Use sharepoint_multi_patient_check for ALL multi-patient document analysis requests
+- ✅ MANDATORY: Actions analyze ONLY current screen - no navigation ever
+- ✅ REQUIRED: Generate proper HTML tables with ✅ and ❌ symbols only
+- ONLY approved actions: sharepoint_document_scan, sharepoint_patient_check, sharepoint_multi_patient_check
+- For "check all patients" requests: IMMEDIATELY use sharepoint_multi_patient_check
+- For single patient: use sharepoint_patient_check
+- Example: {"sharepoint_multi_patient_check": {"siteId": "Site 105", "requiredDocuments": ["Informed Consent Form", "Curriculum Vitae", "training records"]}}
+- These actions generate perfect HTML tables - never create manual tables
 
 3. ELEMENT INTERACTION:
 

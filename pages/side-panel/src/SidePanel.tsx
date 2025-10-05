@@ -1019,7 +1019,7 @@ const SidePanel = () => {
                 <div className="rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
                   <img src="/gsk-logo.png" alt="GSK" className="size-6 object-contain" />
                 </div>
-                <span className="text-lg font-semibold text-gray-800">Agentic Browser</span>
+                <span className="text-lg font-semibold text-black">Agentic Browser</span>
               </div>
             )}
           </div>

@@ -21,13 +21,14 @@ ${commonSecurityRules}
   - Suggest the next high-level steps to take
   - If you know the direct URL, use it directly instead of searching for it (e.g. github.com, www.espn.com, gmail.com). Search it if you don't know the direct URL.
   - Suggest to use the current tab as possible as you can, do NOT open a new tab unless the task requires it.
-  - **GOOGLE DRIVE MANDATORY SEARCH**: For ANY task involving Google Drive files, folders, or documents:
-    - NEVER suggest manual folder navigation or clicking on folders
-    - ONLY suggest search-based actions: "search_google_drive", "google_drive_patient_check", or "google_drive_document_scan"
-    - For nested folders, search for the SPECIFIC path structure (e.g., for patient001 in site105: search "site105/patient001" or "patient001 site105")
-    - Use multiple search strategies: exact path "site105/patient001", partial "patient001", or combined "site105 patient001"
-    - Manual clicking is unreliable and slow - search is the ONLY approved method
-    - Example: For patient001 in site105, suggest "Search for 'site105/patient001' using search_google_drive" to find the exact subfolder
+  - **SHAREPOINT SCREEN-ONLY ANALYSIS**: For ANY task involving SharePoint files, folders, or document checking:
+    - NEVER suggest manual navigation, clicking folders, or searching
+    - ONLY use screen-only actions: "sharepoint_document_scan", "sharepoint_patient_check", or "sharepoint_multi_patient_check"
+    - These actions analyze ONLY what is currently visible on screen - no navigation required
+    - For multi-patient compliance: always use "sharepoint_multi_patient_check" to analyze all visible patient folders at once
+    - For single patient: use "sharepoint_patient_check" for the currently visible patient folder
+    - Screen analysis is immediate and accurate - no clicking or searching needed
+    - Example: For site compliance checking, suggest "Use sharepoint_multi_patient_check to analyze all patient folders visible on current screen"
   - **ALWAYS break down web tasks into actionable steps, even if they require user authentication** (e.g., Gmail, social media, banking sites)
   - **Your role is strategic planning and evaluating the current state, not execution feasibility assessment** - the navigator agent handles actual execution and user interactions
   - IMPORTANT:
@@ -64,6 +65,14 @@ When determining if a task is "done":
 - Include exact URLs when available (do NOT make up URLs)
 - Compile the answer from provided context - do NOT make up information
 - Make answers concise and user-friendly
+- **FOR SHAREPOINT DOCUMENT ANALYSIS**: 
+  - ❌ ABSOLUTELY FORBIDDEN: Creating manual tables, markdown tables, or text tables with "Present/Missing" or "✓ Present/✗ Missing"
+  - ❌ ABSOLUTELY FORBIDDEN: Using pipe characters (|) for table formatting
+  - ❌ ABSOLUTELY FORBIDDEN: Manual formatting of document analysis results
+  - ✅ MANDATORY: Copy ONLY the exact HTML table output from sharepoint_multi_patient_check or sharepoint_patient_check actions
+  - ✅ MANDATORY: The HTML output contains proper <table> tags with ✅ and ❌ symbols only - use this exactly as provided
+  - ✅ MANDATORY: If no HTML table was generated, request the Navigator to run the sharepoint action first
+  - The sharepoint actions generate black text on white background with proper borders - never modify this formatting
 
 #RESPONSE FORMAT: Your must always respond with a valid JSON object with the following fields:
 {

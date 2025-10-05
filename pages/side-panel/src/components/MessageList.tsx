@@ -54,13 +54,13 @@ function MessageBlock({ message, isSameActor, isDarkMode = false }: MessageBlock
 
       <div className="min-w-0 flex-1">
         {!isSameActor && (
-          <div className={`mb-1 text-sm font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+          <div className={`mb-1 text-sm font-semibold ${isDarkMode ? 'text-gray-200' : 'text-black'}`}>
             {actor.name}
           </div>
         )}
 
         <div className="space-y-0.5">
-          <div className={`whitespace-pre-wrap break-words text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+          <div className={`whitespace-pre-wrap break-words text-sm ${isDarkMode ? 'text-gray-300' : 'text-black'}`}>
             {isProgress ? (
               <div className={`h-1 overflow-hidden rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
                 <div className="h-full animate-progress bg-blue-500" />
@@ -74,7 +74,7 @@ function MessageBlock({ message, isSameActor, isDarkMode = false }: MessageBlock
             )}
           </div>
           {!isProgress && (
-            <div className={`text-right text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-300'}`}>
+            <div className={`text-right text-xs ${isDarkMode ? 'text-gray-500' : 'text-black'}`}>
               {formatTimestamp(message.timestamp)}
             </div>
           )}

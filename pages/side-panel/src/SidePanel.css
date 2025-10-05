@@ -1,124 +1,50 @@
-/* Vibrant Neural AI Glass UI */
+/* Simple Clean UI */
 body {
-  border-color: rgba(139, 92, 246, 0.4) !important;
+  border-color: #cccccc !important;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
   font-weight: 400 !important;
   -webkit-font-smoothing: antialiased !important;
   -moz-osx-font-smoothing: grayscale !important;
+  background: #ffffff !important;
+  color: #000000 !important;
 }
 
-/* Enhanced Glass morphism with neural vibes */
-.glass-backdrop {
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.15) 0%, 
-    rgba(139, 92, 246, 0.05) 50%, 
-    rgba(34, 211, 238, 0.05) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  position: relative;
-}
-
-.glass-backdrop-dark {
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  background: linear-gradient(135deg, 
-    rgba(0, 0, 0, 0.2) 0%, 
-    rgba(139, 92, 246, 0.08) 50%, 
-    rgba(34, 211, 238, 0.08) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  position: relative;
-}
-
-/* Neural glow effects with multi-color */
-.neural-glow {
-  box-shadow: 
-    0 0 20px rgba(139, 92, 246, 0.4),
-    0 0 40px rgba(34, 211, 238, 0.2),
-    0 0 60px rgba(217, 70, 239, 0.1);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.neural-glow:hover {
-  box-shadow: 
-    0 0 30px rgba(139, 92, 246, 0.6),
-    0 0 60px rgba(34, 211, 238, 0.3),
-    0 0 90px rgba(217, 70, 239, 0.2);
-  transform: translateY(-2px);
-}
-
-/* Vibrant neural flow animation */
-.neural-flow-bg {
-  background: radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(34, 211, 238, 0.3) 0%, transparent 50%),
-              radial-gradient(circle at 40% 40%, rgba(217, 70, 239, 0.2) 0%, transparent 50%);
-  background-size: 300% 300%;
-  animation: neural-flow 25s ease-in-out infinite;
-}
-
-/* Plasma gradient backgrounds */
-.plasma-gradient {
-  background: linear-gradient(-45deg, 
-    #8b5cf6, #06b6d4, #d946ef, #14b8a6, 
-    #22d3ee, #a21caf, #0891b2, #c026d3);
-  background-size: 400% 400%;
-  animation: gradient-shift 20s ease infinite;
-}
-
-.plasma-gradient-dark {
-  background: linear-gradient(-45deg, 
-    #5b21b6, #0891b2, #a21caf, #0d9488, 
-    #155e75, #701a75, #115e59, #86198f);
-  background-size: 400% 400%;
-  animation: gradient-shift 20s ease infinite;
-}
-
-/* Shimmer effect for interactive elements */
+/* REMOVE ALL GLASS EFFECTS - Simple backgrounds only */
+.glass-backdrop,
+.glass-backdrop-dark,
+.neural-glow,
+.neural-flow-bg,
+.plasma-gradient,
+.plasma-gradient-dark,
 .shimmer {
-  position: relative;
-  overflow: hidden;
+  background: #ffffff !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: 1px solid #dddddd !important;
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
 }
 
+/* Remove all hover effects and animations */
+.neural-glow:hover,
 .shimmer::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(255, 255, 255, 0.2), 
-    transparent);
-  animation: shimmer 2.5s linear infinite;
+  background: #ffffff !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  animation: none !important;
+  transform: none !important;
 }
 
-/* Enhanced keyframe animations */
+/* Disable all keyframe animations */
 @keyframes gradient-shift {
-  0%, 100% { 
-    background-position: 0% 50%; 
-  }
-  25% { 
-    background-position: 100% 50%; 
-  }
-  50% { 
-    background-position: 100% 100%; 
-  }
-  75% { 
-    background-position: 50% 100%; 
-  }
+  0%, 100% { background: #ffffff !important; }
 }
 
 @keyframes neural-flow {
-  0%, 100% { 
-    background-position: 0% 0%, 100% 100%, 50% 50%; 
-  }
-  33% { 
-    background-position: 100% 50%, 0% 100%, 50% 0%; 
-  }
-  66% { 
-    background-position: 50% 100%, 50% 0%, 100% 50%; 
-  }
+  0%, 100% { background: #ffffff !important; }
 }
 
 /* Remove unused classes: .App, .App-logo, .App-header */
@@ -327,25 +253,170 @@ code {
   color: #000 !important;
 }
 
-/* Force black text and proper borders */
-.message-html-content * {
-  color: #000 !important;
+/* ABSOLUTE BLACK TEXT ENFORCEMENT */
+.message-html-content,
+.message-html-content *,
+.message-html-content p,
+.message-html-content div,
+.message-html-content span,
+.message-html-content td {
+  color: #000000 !important;
+  background: #ffffff !important;
 }
 
-.message-html-content table * {
-  border-color: #000 !important;
+/* Force black borders */
+.message-html-content table,
+.message-html-content table *,
+.message-html-content th,
+.message-html-content td {
+  border-color: #000000 !important;
+  color: #000000 !important;
+  background-color: #ffffff !important;
 }
 
-/* Header cells should be white text on dark background */
+/* Header cells ONLY should be white text on dark background */
 .message-html-content th,
 .message-html-content thead td {
-  color: #fff !important;
-  background-color: #333 !important;
+  color: #ffffff !important;
+  background-color: #333333 !important;
 }
 
-/* Ensure proper visibility */
+/* Simple clean message container */
 .message-html-content {
-  background: #fff !important;
+  background: #ffffff !important;
   padding: 10px !important;
-  border-radius: 8px !important;
+  border-radius: 0px !important;
+  box-shadow: none !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Ensure no highlighting anywhere */
+.message-html-content *::selection {
+  background: transparent !important;
+}
+
+.message-html-content *::-moz-selection {
+  background: transparent !important;
+}
+
+/* GLOBAL FORCE BLACK TEXT AND WHITE BACKGROUND - OVERRIDE ALL THEMES */
+/* Override ALL Tailwind classes and theme colors */
+.text-gray-300,
+.text-gray-400,
+.text-gray-500,
+.text-gray-600,
+.text-gray-700,
+.text-gray-800,
+.text-slate-200,
+.text-slate-300,
+.text-slate-400,
+.text-slate-500,
+.text-slate-600,
+.text-slate-700,
+.text-purple-500,
+.text-purple-600,
+.text-violet-500,
+.text-violet-600,
+.text-blue-500,
+.text-blue-600 {
+  color: #000000 !important;
+}
+
+/* Force white backgrounds, remove all colored backgrounds */
+.bg-purple-500,
+.bg-purple-600,
+.bg-violet-500,
+.bg-violet-600,
+.bg-blue-500,
+.bg-blue-600,
+.bg-gradient-to-r,
+.bg-gradient-to-br,
+.glass-backdrop,
+.glass-backdrop-dark,
+.neural-glow,
+.neural-flow-bg,
+.plasma-gradient,
+.plasma-gradient-dark {
+  background: #ffffff !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border: 1px solid #cccccc !important;
+}
+
+/* Remove ALL glass effects and neural themes for message area */
+.max-w-full.space-y-4,
+.max-w-full.space-y-4 *,
+.flex.max-w-full.gap-3,
+.flex.max-w-full.gap-3 * {
+  background: #ffffff !important;
+  color: #000000 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+/* Force message text to be pure black */
+.whitespace-pre-wrap.break-words.text-sm,
+.whitespace-pre-wrap.break-words.text-sm * {
+  color: #000000 !important;
+  font-weight: 500 !important;
+}
+
+/* Remove any purple borders or highlights */
+.border-sky-200,
+.border-sky-800,
+.border-purple-200,
+.border-purple-500,
+.border-violet-200,
+.border-violet-500 {
+  border-color: #cccccc !important;
+}
+
+/* GLOBAL SIMPLE UI ENFORCEMENT - Remove ALL effects */
+* {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Keep only essential transitions for buttons */
+button, 
+.header-icon,
+.send-button {
+  transition: opacity 0.2s ease !important;
+}
+
+/* Force simple backgrounds everywhere */
+.bg-gradient-to-r,
+.bg-gradient-to-br,
+.bg-gradient-to-l,
+.bg-gradient-to-t,
+.bg-gradient-to-b,
+.bg-gradient-to-tr,
+.bg-gradient-to-tl,
+.bg-gradient-to-bl {
+  background: #ffffff !important;
+  background-image: none !important;
+}
+
+/* Remove all glow, shadow, and blur effects */
+.shadow,
+.shadow-sm,
+.shadow-md,
+.shadow-lg,
+.shadow-xl,
+.shadow-2xl,
+.drop-shadow,
+.drop-shadow-sm,
+.drop-shadow-md,
+.drop-shadow-lg,
+.drop-shadow-xl {
+  box-shadow: none !important;
+  filter: none !important;
 }

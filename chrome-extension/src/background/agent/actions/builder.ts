@@ -585,8 +585,8 @@ ${input.requiredDocuments
   .map((doc: string, index: number) => {
     const status = documentStatus[doc];
     const statusEmoji = status === 'FOUND' ? '✅' : '❌';
-    const bgColor = index % 2 === 0 ? '#f9f9f9' : '#ffffff';
-    const statusBgColor = status === 'FOUND' ? '#d4edda' : '#f8d7da';
+    const bgColor = '#ffffff';
+    const statusBgColor = '#ffffff';
 
     return `<tr style="background-color: ${bgColor};">
 <td style="border: 2px solid #000; padding: 12px; color: #000; font-weight: 500;">${doc}</td>
@@ -712,8 +712,8 @@ ${input.requiredDocuments
   .map((doc: string, index: number) => {
     const status = documentStatus[doc];
     const statusEmoji = status === 'FOUND' ? '✅' : '❌';
-    const bgColor = index % 2 === 0 ? '#f9f9f9' : '#ffffff';
-    const statusBgColor = status === 'FOUND' ? '#d4edda' : '#f8d7da';
+    const bgColor = '#ffffff';
+    const statusBgColor = '#ffffff';
 
     return `<tr style="background-color: ${bgColor};">
 <td style="border: 2px solid #000; padding: 12px; color: #000; font-weight: 500;">${doc}</td>
@@ -879,12 +879,12 @@ ${input.requiredDocuments
 <tbody>
 ${patientFolders
   .map((patient, index) => {
-    const bgColor = index % 2 === 0 ? '#f9f9f9' : '#ffffff';
+    const bgColor = '#ffffff';
     const statusCells = input.requiredDocuments
       .map(doc => {
         const status = patientResults[patient][doc];
         const statusEmoji = status === 'FOUND' ? '✅' : '❌';
-        const statusBgColor = status === 'FOUND' ? '#d4edda' : '#f8d7da';
+        const statusBgColor = '#ffffff';
         return `<td style="border: 2px solid #000; padding: 12px; text-align: center; background-color: ${statusBgColor}; color: #000; font-weight: bold;">${statusEmoji}</td>`;
       })
       .join('');
