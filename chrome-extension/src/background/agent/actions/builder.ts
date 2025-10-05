@@ -11,8 +11,9 @@ import {
   searchGoogleActionSchema,
   searchGoogleDriveActionSchema,
   googleDriveDirectAccessActionSchema,
-  googleDriveDocumentScanActionSchema,
-  googleDrivePatientCheckActionSchema,
+  sharepointDocumentScanActionSchema,
+  sharepointPatientCheckActionSchema,
+  sharepointMultiPatientCheckActionSchema,
   searchInPageActionSchema,
   switchTabActionSchema,
   type ActionSchema,
@@ -481,35 +482,38 @@ export class ActionBuilder {
     );
     actions.push(googleDriveDirectAccess);
 
-    // Fast Google Drive Document Scanner
-    const googleDriveDocumentScan = new Action(
-      async (input: z.infer<typeof googleDriveDocumentScanActionSchema.schema>) => {
-        const intent = input.intent || `Scanning Google Drive for documents in ${input.directoryContext}`;
+    // Fast SharePoint Document Scanner - Screen Analysis Only
+    const sharepointDocumentScan = new Action(
+      async (input: z.infer<typeof sharepointDocumentScanActionSchema.schema>) => {
+        const intent = input.intent || `Scanning current SharePoint view for documents in ${input.directoryContext}`;
         this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
         try {
           const page = await this.context.browserContext.getCurrentPage();
 
-          // Extract current page content efficiently
+          // Extract current page content efficiently - SharePoint specific
           const pageContent = await page.evaluateScript(`
-            // Extract all file/folder names from Google Drive view
-            const extractGoogleDriveFiles = () => {
+            // Extract all file/folder names from SharePoint view
+            const extractSharePointFiles = () => {
               const files = [];
               
-              // Try multiple selectors for Google Drive file listings
+              // SharePoint-specific selectors for file listings
               const selectors = [
-                '[data-target="doc-title"] [title]',  // File titles
-                '[role="gridcell"] [title]',          // Grid view files
-                '[jsaction*="select"] [title]',       // Selectable items
-                '.a-s-qe-qE[title]',                  // Drive file items
-                '[data-tooltip]',                     // Files with tooltips
-                '.a-s-oa-qe-T1-KR',                   // File name containers
-                '[data-testid="file-row"] [title]',   // File rows
+                '[data-automationid="DetailsRowCell"] button[title]',  // SharePoint file titles
+                '[data-automationid="DetailsRowCell"] [title]',       // SharePoint items with titles
+                '.ms-DetailsRow [title]',                             // Details view items
+                '.ms-FocusZone [aria-label]',                        // Accessible items
+                '[role="gridcell"] [title]',                         // Grid view files
+                '.od-ItemContent-title',                             // OneDrive/SharePoint titles
+                '.ms-List-cell [title]',                            // List view cells
+                'button[data-automationid="fieldRendererOnClick"]',  // Clickable file items
               ];
               
               selectors.forEach(selector => {
                 document.querySelectorAll(selector).forEach(el => {
-                  const title = el.getAttribute('title') || el.textContent;
+                  const title = el.getAttribute('title') || 
+                               el.getAttribute('aria-label') || 
+                               el.textContent;
                   if (title && title.trim() && !files.includes(title.trim())) {
                     files.push(title.trim());
                   }
@@ -519,42 +523,39 @@ export class ActionBuilder {
               return files;
             };
             
-            return extractGoogleDriveFiles();
+            return extractSharePointFiles();
           `);
 
           const foundFiles = Array.isArray(pageContent) ? pageContent : [];
           const documentStatus: { [key: string]: 'FOUND' | 'MISSING' } = {};
           const foundAlternatives: { [key: string]: string[] } = {};
 
-          // Check each required document
+          // Check each required document with precise matching
           for (const requiredDoc of input.requiredDocuments) {
             let found = false;
-            const alternatives: string[] = [];
 
-            // Exact match first
-            if (foundFiles.some(file => file === requiredDoc)) {
-              documentStatus[requiredDoc] = 'FOUND';
-              found = true;
-            }
-
-            // If not found exactly, look for similar names
-            if (!found && input.includeAlternativeNames) {
+            if (input.exactMatchOnly) {
+              // Exact match only for SharePoint precision
+              if (
+                foundFiles.some(
+                  file =>
+                    file.toLowerCase() === requiredDoc.toLowerCase() ||
+                    file.toLowerCase().includes(requiredDoc.toLowerCase()),
+                )
+              ) {
+                documentStatus[requiredDoc] = 'FOUND';
+                found = true;
+              }
+            } else {
+              // More flexible matching if needed
               const requiredLower = requiredDoc.toLowerCase();
-              const baseNameWithoutExt = requiredLower.replace(/\.[^/.]+$/, '');
 
               for (const file of foundFiles) {
                 const fileLower = file.toLowerCase();
-
-                // Check various matching strategies
-                if (
-                  fileLower.includes(baseNameWithoutExt) ||
-                  baseNameWithoutExt.includes(fileLower.replace(/\.[^/.]+$/, ''))
-                ) {
-                  alternatives.push(file);
-                  if (!found) {
-                    documentStatus[requiredDoc] = 'FOUND';
-                    found = true;
-                  }
+                if (fileLower.includes(requiredLower) || requiredLower.includes(fileLower)) {
+                  documentStatus[requiredDoc] = 'FOUND';
+                  found = true;
+                  break;
                 }
               }
             }
@@ -608,159 +609,89 @@ ${input.requiredDocuments
             includeInMemory: true,
           });
         } catch (error) {
-          const errorMsg = `Google Drive document scan failed: ${error instanceof Error ? error.message : String(error)}`;
+          const errorMsg = `SharePoint document scan failed: ${error instanceof Error ? error.message : String(error)}`;
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
           return new ActionResult({ error: errorMsg, includeInMemory: true });
         }
       },
-      googleDriveDocumentScanActionSchema,
+      sharepointDocumentScanActionSchema,
     );
-    actions.push(googleDriveDocumentScan);
+    actions.push(sharepointDocumentScan);
 
-    // Complete Google Drive Patient Document Check
-    const googleDrivePatientCheck = new Action(
-      async (input: z.infer<typeof googleDrivePatientCheckActionSchema.schema>) => {
-        const intent = input.intent || `Complete patient document check for ${input.patientId} in ${input.siteId}`;
+    // Complete SharePoint Patient Document Check - Screen Analysis Only
+    const sharepointPatientCheck = new Action(
+      async (input: z.infer<typeof sharepointPatientCheckActionSchema.schema>) => {
+        const intent =
+          input.intent || `Analyzing current screen for patient documents: ${input.patientId} in ${input.siteId}`;
         this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
         try {
           const page = await this.context.browserContext.getCurrentPage();
 
-          // Step 1: Try multiple search strategies to find the patient directory
-          const searchTerms = [
-            `${input.siteId}/${input.patientId}`,
-            `${input.patientId} ${input.siteId}`,
-            input.patientId,
-            input.siteId,
-          ];
-
-          let navigateSuccess = false;
-          let currentSearchTerm = '';
-
-          if (input.useAdvancedSearch) {
-            // Try URL-based navigation first
-            for (const searchTerm of searchTerms) {
-              try {
-                const searchUrl = `https://drive.google.com/drive/search?q=${encodeURIComponent(searchTerm)}`;
-                await page.navigateTo(searchUrl);
-                await new Promise(resolve => setTimeout(resolve, 1500));
-
-                // Check if we got meaningful results
-                const currentUrl = page.url();
-                if (currentUrl.includes('search') && currentUrl.includes(encodeURIComponent(searchTerm))) {
-                  navigateSuccess = true;
-                  currentSearchTerm = searchTerm;
-                  break;
-                }
-              } catch (error) {
-                logger.warning(`Navigation failed for search term "${searchTerm}":`, error);
-              }
-            }
-
-            // If URL navigation didn't work, try keyboard shortcuts
-            if (!navigateSuccess) {
-              try {
-                // Ensure we're on Google Drive
-                const currentUrl = page.url();
-                if (!currentUrl.includes('drive.google.com')) {
-                  await page.navigateTo('https://drive.google.com');
-                  await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-
-                // Use Google Drive search shortcut
-                await page.sendKeys('/');
-                await new Promise(resolve => setTimeout(resolve, 300));
-                await page.sendKeys(searchTerms[0]); // Use the most specific search term
-                await page.sendKeys('Enter');
-                await new Promise(resolve => setTimeout(resolve, 2000));
-
-                navigateSuccess = true;
-                currentSearchTerm = searchTerms[0];
-              } catch (error) {
-                logger.warning('Keyboard shortcut navigation failed:', error);
-              }
-            }
-          }
-
-          // Step 2: Extract files and analyze document status
+          // SCREEN-ONLY Analysis - No navigation or search
+          // Simply analyze what is currently visible on the SharePoint page
           const pageContent = await page.evaluateScript(`
             (function() {
-              const extractGoogleDriveFiles = function() {
+              const extractSharePointFiles = function() {
                 const files = [];
                 const selectors = [
-                  '[data-target="doc-title"] [title]',
-                  '[role="gridcell"] [title]',
-                  '[jsaction*="select"] [title]',
-                  '.a-s-qe-qE[title]',
-                '[data-tooltip]',
-                '.a-s-oa-qe-T1-KR',
-                '[data-testid="file-row"] [title]',
-                // Additional selectors for different Google Drive views
-                '[data-id] [title]',
-                '.a-s-oa-d-w [title]',
-                '[role="button"][title]',
-              ];
-              
-              selectors.forEach(selector => {
-                document.querySelectorAll(selector).forEach(el => {
-                  const title = el.getAttribute('title') || el.textContent;
-                  if (title && title.trim() && !files.includes(title.trim())) {
-                    files.push(title.trim());
-                  }
+                  '[data-automationid="DetailsRowCell"] button[title]',  // SharePoint file titles
+                  '[data-automationid="DetailsRowCell"] [title]',       // SharePoint items with titles  
+                  '.ms-DetailsRow [title]',                             // Details view items
+                  '.ms-FocusZone [aria-label]',                        // Accessible items
+                  '[role="gridcell"] [title]',                         // Grid view files
+                  '.od-ItemContent-title',                             // OneDrive/SharePoint titles
+                  '.ms-List-cell [title]',                            // List view cells
+                  'button[data-automationid="fieldRendererOnClick"]',  // Clickable file items
+                  '[data-automationid="name"] [title]',               // Name field with title
+                  '.ms-DetailsList-cell [title]',                     // Details list cells
+                ];
+                
+                selectors.forEach(selector => {
+                  document.querySelectorAll(selector).forEach(el => {
+                    const title = el.getAttribute('title') || 
+                                 el.getAttribute('aria-label') || 
+                                 el.textContent;
+                    if (title && title.trim() && !files.includes(title.trim())) {
+                      files.push(title.trim());
+                    }
+                  });
                 });
-              });
+                
+                return files;
+              };
               
-              return files;
-            };
-            
-            return extractGoogleDriveFiles();
-          })()`);
+              return extractSharePointFiles();
+            })()`);
 
           const foundFiles = Array.isArray(pageContent) ? pageContent : [];
           const documentStatus: { [key: string]: 'FOUND' | 'MISSING' } = {};
           const foundAlternatives: { [key: string]: string[] } = {};
 
-          // Analyze each required document
+          // Analyze each required document with precise SharePoint matching
           for (const requiredDoc of input.requiredDocuments) {
             let found = false;
-            const alternatives: string[] = [];
 
-            // Exact match
-            if (foundFiles.some(file => file === requiredDoc)) {
-              documentStatus[requiredDoc] = 'FOUND';
-              found = true;
-            }
-
-            // Fuzzy matching for similar names
-            if (!found) {
-              const requiredLower = requiredDoc.toLowerCase();
-              const requiredBase = requiredLower.replace(/\.[^/.]+$/, '').replace(/\s+/g, '');
-
+            if (input.screenAnalysisOnly) {
+              // Exact and contains matching only - no complex fuzzy logic
               for (const file of foundFiles) {
                 const fileLower = file.toLowerCase();
-                const fileBase = fileLower.replace(/\.[^/.]+$/, '').replace(/\s+/g, '');
+                const requiredLower = requiredDoc.toLowerCase();
 
-                // Multiple matching strategies
                 if (
-                  fileLower.includes(requiredBase) ||
-                  requiredBase.includes(fileBase) ||
-                  this.levenshteinDistance(requiredBase, fileBase) <= 3
+                  fileLower === requiredLower ||
+                  fileLower.includes(requiredLower) ||
+                  requiredLower.includes(fileLower)
                 ) {
-                  alternatives.push(file);
-                  if (!found) {
-                    documentStatus[requiredDoc] = 'FOUND';
-                    found = true;
-                  }
+                  documentStatus[requiredDoc] = 'FOUND';
+                  found = true;
+                  break;
                 }
               }
             }
 
             if (!found) {
               documentStatus[requiredDoc] = 'MISSING';
-            }
-
-            if (alternatives.length > 0) {
-              foundAlternatives[requiredDoc] = alternatives;
             }
           }
 
@@ -816,14 +747,177 @@ ${
             includeInMemory: true,
           });
         } catch (error) {
-          const errorMsg = `Google Drive patient check failed: ${error instanceof Error ? error.message : String(error)}`;
+          const errorMsg = `SharePoint patient check failed: ${error instanceof Error ? error.message : String(error)}`;
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
           return new ActionResult({ error: errorMsg, includeInMemory: true });
         }
       },
-      googleDrivePatientCheckActionSchema,
+      sharepointPatientCheckActionSchema,
     );
-    actions.push(googleDrivePatientCheck);
+    actions.push(sharepointPatientCheck);
+
+    // Multi-Patient SharePoint Analysis - Perfect for site-level compliance checking
+    const sharepointMultiPatientCheck = new Action(
+      async (input: z.infer<typeof sharepointMultiPatientCheckActionSchema.schema>) => {
+        const intent = input.intent || `Analyzing all patient folders in ${input.siteId} for document compliance`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+
+        try {
+          const page = await this.context.browserContext.getCurrentPage();
+
+          // Extract all visible folders and files from current SharePoint view
+          const pageContent = await page.evaluateScript(`
+            (function() {
+              const extractSharePointStructure = function() {
+                const structure = {
+                  folders: [],
+                  files: []
+                };
+                
+                // SharePoint folder and file selectors
+                const folderSelectors = [
+                  '[data-automationid="DetailsRowCell"] button[title*="folder"]',
+                  '[data-automationid="DetailsRowCell"] [title*="Patient"]',
+                  '[data-automationid="DetailsRowCell"] [aria-label*="folder"]',
+                  '.ms-DetailsRow [title*="Patient"]',
+                  '.ms-FocusZone [aria-label*="Patient"]',
+                ];
+                
+                const fileSelectors = [
+                  '[data-automationid="DetailsRowCell"] button[title]',
+                  '[data-automationid="DetailsRowCell"] [title]',
+                  '.ms-DetailsRow [title]',
+                  '.ms-FocusZone [aria-label]',
+                  '[role="gridcell"] [title]',
+                  '.od-ItemContent-title',
+                ];
+                
+                // Extract folders (patient folders)
+                folderSelectors.forEach(selector => {
+                  document.querySelectorAll(selector).forEach(el => {
+                    const title = el.getAttribute('title') || 
+                                 el.getAttribute('aria-label') || 
+                                 el.textContent;
+                    if (title && title.trim() && 
+                        (title.toLowerCase().includes('patient') || 
+                         /patient\s*\d+/i.test(title) ||
+                         /\d+/.test(title))) {
+                      if (!structure.folders.includes(title.trim())) {
+                        structure.folders.push(title.trim());
+                      }
+                    }
+                  });
+                });
+                
+                // Extract all visible files
+                fileSelectors.forEach(selector => {
+                  document.querySelectorAll(selector).forEach(el => {
+                    const title = el.getAttribute('title') || 
+                                 el.getAttribute('aria-label') || 
+                                 el.textContent;
+                    if (title && title.trim() && !structure.files.includes(title.trim())) {
+                      structure.files.push(title.trim());
+                    }
+                  });
+                });
+                
+                return structure;
+              };
+              
+              return extractSharePointStructure();
+            })()
+          `);
+
+          const structure = pageContent || { folders: [], files: [] };
+          const patientFolders = structure.folders || [];
+          const allFiles = structure.files || [];
+
+          // Analyze document status for each patient folder
+          const patientResults: { [patientId: string]: { [doc: string]: 'FOUND' | 'MISSING' } } = {};
+
+          for (const folder of patientFolders) {
+            const patientId = folder;
+            patientResults[patientId] = {};
+
+            for (const requiredDoc of input.requiredDocuments) {
+              let found = false;
+
+              for (const file of allFiles) {
+                const fileLower = file.toLowerCase();
+                const requiredLower = requiredDoc.toLowerCase();
+
+                if (
+                  fileLower === requiredLower ||
+                  fileLower.includes(requiredLower) ||
+                  requiredLower.includes(fileLower)
+                ) {
+                  patientResults[patientId][requiredDoc] = 'FOUND';
+                  found = true;
+                  break;
+                }
+              }
+
+              if (!found) {
+                patientResults[patientId][requiredDoc] = 'MISSING';
+              }
+            }
+          }
+
+          // Generate comprehensive multi-patient table
+          const tableOutput = `<table style="width: 100%; border-collapse: collapse; border: 3px solid #000; margin: 20px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+<thead>
+<tr style="background: #333; color: #fff;">
+<th style="border: 2px solid #000; padding: 12px; text-align: left; font-weight: bold; color: #fff;">Patient</th>
+${input.requiredDocuments
+  .map(
+    doc =>
+      `<th style="border: 2px solid #000; padding: 12px; text-align: center; font-weight: bold; color: #fff;">${doc}</th>`,
+  )
+  .join('')}
+</tr>
+</thead>
+<tbody>
+${patientFolders
+  .map((patient, index) => {
+    const bgColor = index % 2 === 0 ? '#f9f9f9' : '#ffffff';
+    const statusCells = input.requiredDocuments
+      .map(doc => {
+        const status = patientResults[patient][doc];
+        const statusEmoji = status === 'FOUND' ? '✅' : '❌';
+        const statusBgColor = status === 'FOUND' ? '#d4edda' : '#f8d7da';
+        return `<td style="border: 2px solid #000; padding: 12px; text-align: center; background-color: ${statusBgColor}; color: #000; font-weight: bold;">${statusEmoji}</td>`;
+      })
+      .join('');
+
+    return `<tr style="background-color: ${bgColor};">
+<td style="border: 2px solid #000; padding: 12px; color: #000; font-weight: 500;">${patient}</td>
+${statusCells}
+</tr>`;
+  })
+  .join('\n')}
+</tbody>
+</table>
+
+<div style="margin: 20px 0; padding: 15px; border: 2px solid #000; border-radius: 5px; background: #f0f0f0;">
+<strong style="color: #000;">Summary:</strong> Found ${patientFolders.length} patient folders in ${input.siteId}
+</div>`;
+
+          const msg = `Multi-patient analysis completed for ${input.siteId}: ${patientFolders.length} patients analyzed`;
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+
+          return new ActionResult({
+            extractedContent: tableOutput,
+            includeInMemory: true,
+          });
+        } catch (error) {
+          const errorMsg = `SharePoint multi-patient check failed: ${error instanceof Error ? error.message : String(error)}`;
+          this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+          return new ActionResult({ error: errorMsg, includeInMemory: true });
+        }
+      },
+      sharepointMultiPatientCheckActionSchema,
+    );
+    actions.push(sharepointMultiPatientCheck);
 
     const searchInPage = new Action(async (input: z.infer<typeof searchInPageActionSchema.schema>) => {
       const context = this.context;

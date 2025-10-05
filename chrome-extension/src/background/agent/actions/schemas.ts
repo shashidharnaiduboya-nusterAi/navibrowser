@@ -213,29 +213,51 @@ export const googleDriveDirectAccessActionSchema: ActionSchema = {
   }),
 };
 
-export const googleDriveDocumentScanActionSchema: ActionSchema = {
-  name: 'google_drive_document_scan',
+export const sharepointDocumentScanActionSchema: ActionSchema = {
+  name: 'sharepoint_document_scan',
   description:
-    'FAST document verification in Google Drive directories. Scans current view for specific documents and generates a comprehensive status table without slow navigation.',
+    'FAST document verification in SharePoint directories. Scans ONLY what is currently visible on screen for specific documents and generates a comprehensive status table. Does NOT navigate - only analyzes current view.',
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
-    requiredDocuments: z.array(z.string()).describe('list of required document names to check for'),
-    directoryContext: z.string().describe('context about the directory being scanned (e.g., "patient001 in site105")'),
+    requiredDocuments: z
+      .array(z.string())
+      .describe('list of required document names to check for (e.g., ["ICF", "CV", "training records"])'),
+    directoryContext: z.string().describe('context about the directory being scanned (e.g., "Patient 01 in Site 105")'),
     generateTable: z.boolean().default(true).describe('generate a formatted table of document status'),
-    includeAlternativeNames: z.boolean().default(true).describe('check for similar document names and variations'),
+    exactMatchOnly: z.boolean().default(true).describe('only count exact matches, no similar names'),
   }),
 };
 
-export const googleDrivePatientCheckActionSchema: ActionSchema = {
-  name: 'google_drive_patient_check',
+export const sharepointPatientCheckActionSchema: ActionSchema = {
+  name: 'sharepoint_patient_check',
   description:
-    'COMPLETE one-shot action for patient document verification in Google Drive. Automatically navigates to patient directory and generates document status table. Perfect for clinical trial document compliance.',
+    'SCREEN-BASED patient document verification in SharePoint. Analyzes ONLY what is currently visible on screen to check for required documents. Does NOT search or navigate - only examines current folder contents exactly as displayed.',
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
-    siteId: z.string().describe('site identifier (e.g., "site105")'),
-    patientId: z.string().describe('patient identifier (e.g., "patient001")'),
-    requiredDocuments: z.array(z.string()).describe('list of required document names to check for'),
-    useAdvancedSearch: z.boolean().default(true).describe('use multiple search strategies for better results'),
+    siteId: z.string().describe('site identifier visible on screen (e.g., "Site 105")'),
+    patientId: z.string().describe('patient identifier visible on screen (e.g., "Patient 01")'),
+    requiredDocuments: z
+      .array(z.string())
+      .describe('list of required document names to check for (e.g., ["ICF", "CV", "training records"])'),
+    screenAnalysisOnly: z.boolean().default(true).describe('only analyze what is currently visible, no navigation'),
+  }),
+};
+
+export const sharepointMultiPatientCheckActionSchema: ActionSchema = {
+  name: 'sharepoint_multi_patient_check',
+  description:
+    'SCREEN-BASED multi-patient document verification for SharePoint. Analyzes current visible folder structure to identify all patient folders and their document status. Perfect for site-level compliance checking. Does NOT navigate - only analyzes current screen.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    siteId: z.string().describe('site identifier visible on screen (e.g., "Site 105")'),
+    requiredDocuments: z
+      .array(z.string())
+      .describe('list of required document names to check for each patient (e.g., ["ICF", "CV", "training records"])'),
+    generateSummaryTable: z
+      .boolean()
+      .default(true)
+      .describe('generate a comprehensive table showing all patients and their document status'),
+    screenAnalysisOnly: z.boolean().default(true).describe('only analyze what is currently visible, no navigation'),
   }),
 };
 
