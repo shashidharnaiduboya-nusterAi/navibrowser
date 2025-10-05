@@ -17,6 +17,7 @@ import {
   switchTabActionSchema,
   type ActionSchema,
   sendKeysActionSchema,
+  smartScrollSearchActionSchema,
   scrollToTextActionSchema,
   cacheContentActionSchema,
   selectDropdownOptionActionSchema,
@@ -175,7 +176,7 @@ export class ActionBuilder {
       return result;
     } catch (error) {
       const duration = performance.now() - startTime;
-      logger.warn(`[PERFORMANCE] ${actionName} failed after ${duration.toFixed(2)}ms:`, error);
+      logger.warning(`[PERFORMANCE] ${actionName} failed after ${duration.toFixed(2)}ms:`, error);
       throw error;
     }
   }
@@ -415,7 +416,7 @@ export class ActionBuilder {
 
         try {
           const page = await this.context.browserContext.getCurrentPage();
-          let foundResults: string[] = [];
+          const foundResults: string[] = [];
 
           // Strategy 1: Use Google Drive search URL shortcuts
           if (input.useUrlNavigation) {
@@ -433,7 +434,7 @@ export class ActionBuilder {
                   break; // Stop on first successful search
                 }
               } catch (error) {
-                logger.warn(`URL navigation failed for "${searchTerm}":`, error);
+                logger.warning(`URL navigation failed for "${searchTerm}":`, error);
               }
             }
           }
@@ -460,7 +461,7 @@ export class ActionBuilder {
                 break; // Use first search term for now
               }
             } catch (error) {
-              logger.warn('Keyboard shortcut search failed:', error);
+              logger.warning('Keyboard shortcut search failed:', error);
             }
           }
 
@@ -571,30 +572,33 @@ export class ActionBuilder {
           const totalFound = Object.values(documentStatus).filter(status => status === 'FOUND').length;
           const totalMissing = Object.values(documentStatus).filter(status => status === 'MISSING').length;
 
-          const tableOutput = `
-📋 **Document Status for ${input.directoryContext}**
-
-| Required Document | Status | Alternative Files Found |
-|-------------------|--------|------------------------|
+          const tableOutput = `<table style="width: 100%; border-collapse: collapse; border: 3px solid #000; margin: 20px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+<thead>
+<tr style="background: #333; color: #fff;">
+<th style="border: 2px solid #000; padding: 12px; text-align: left; font-weight: bold; color: #fff;">Required Document</th>
+<th style="border: 2px solid #000; padding: 12px; text-align: center; font-weight: bold; color: #fff;">Status</th>
+</tr>
+</thead>
+<tbody>
 ${input.requiredDocuments
-  .map(doc => {
+  .map((doc: string, index: number) => {
     const status = documentStatus[doc];
-    const alternatives = foundAlternatives[doc] || [];
     const statusEmoji = status === 'FOUND' ? '✅' : '❌';
-    const altText = alternatives.length > 0 ? alternatives.join(', ') : 'None';
-    return `| ${doc} | ${statusEmoji} ${status} | ${altText} |`;
+    const bgColor = index % 2 === 0 ? '#f9f9f9' : '#ffffff';
+    const statusBgColor = status === 'FOUND' ? '#d4edda' : '#f8d7da';
+
+    return `<tr style="background-color: ${bgColor};">
+<td style="border: 2px solid #000; padding: 12px; color: #000; font-weight: 500;">${doc}</td>
+<td style="border: 2px solid #000; padding: 12px; text-align: center; background-color: ${statusBgColor}; color: #000; font-weight: bold;">${statusEmoji}</td>
+</tr>`;
   })
   .join('\n')}
+</tbody>
+</table>
 
-**Summary:**
-- Total Required: ${input.requiredDocuments.length}
-- Found: ${totalFound} ✅
-- Missing: ${totalMissing} ❌
-- Completion Rate: ${Math.round((totalFound / input.requiredDocuments.length) * 100)}%
-
-**All Files in Directory:**
-${foundFiles.length > 0 ? foundFiles.map(file => `• ${file}`).join('\n') : 'No files detected in current view'}
-          `;
+<div style="margin: 20px 0; padding: 15px; border: 2px solid #000; border-radius: 5px; background: #f0f0f0;">
+<strong style="color: #000;">Summary:</strong> ${totalFound}/${input.requiredDocuments.length} documents found (${Math.round((totalFound / input.requiredDocuments.length) * 100)}% complete)
+</div>`;
 
           const msg = `Document scan completed for ${input.directoryContext}: ${totalFound}/${input.requiredDocuments.length} documents found`;
           this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
@@ -649,7 +653,7 @@ ${foundFiles.length > 0 ? foundFiles.map(file => `• ${file}`).join('\n') : 'No
                   break;
                 }
               } catch (error) {
-                logger.warn(`Navigation failed for search term "${searchTerm}":`, error);
+                logger.warning(`Navigation failed for search term "${searchTerm}":`, error);
               }
             }
 
@@ -673,20 +677,21 @@ ${foundFiles.length > 0 ? foundFiles.map(file => `• ${file}`).join('\n') : 'No
                 navigateSuccess = true;
                 currentSearchTerm = searchTerms[0];
               } catch (error) {
-                logger.warn('Keyboard shortcut navigation failed:', error);
+                logger.warning('Keyboard shortcut navigation failed:', error);
               }
             }
           }
 
           // Step 2: Extract files and analyze document status
-          const pageContent = await page.evaluateScript(`(() => {
-            const extractGoogleDriveFiles = () => {
-              const files = [];
-              const selectors = [
-                '[data-target="doc-title"] [title]',
-                '[role="gridcell"] [title]',
-                '[jsaction*="select"] [title]',
-                '.a-s-qe-qE[title]',
+          const pageContent = await page.evaluateScript(`
+            (function() {
+              const extractGoogleDriveFiles = function() {
+                const files = [];
+                const selectors = [
+                  '[data-target="doc-title"] [title]',
+                  '[role="gridcell"] [title]',
+                  '[jsaction*="select"] [title]',
+                  '.a-s-qe-qE[title]',
                 '[data-tooltip]',
                 '.a-s-oa-qe-T1-KR',
                 '[data-testid="file-row"] [title]',
@@ -764,45 +769,40 @@ ${foundFiles.length > 0 ? foundFiles.map(file => `• ${file}`).join('\n') : 'No
           const totalMissing = input.requiredDocuments.length - totalFound;
           const completionRate = Math.round((totalFound / input.requiredDocuments.length) * 100);
 
-          const reportOutput = `
-🏥 **Patient Document Verification Report**
-
-**Patient Information:**
-- Site ID: ${input.siteId}
-- Patient ID: ${input.patientId}
-- Search Strategy: ${currentSearchTerm || 'Standard search'}
-- Files Found in Directory: ${foundFiles.length}
-
-**Document Status Table:**
-
-| Required Document | Status | Alternative Files Found |
-|-------------------|--------|------------------------|
+          const reportOutput = `<table style="width: 100%; border-collapse: collapse; border: 3px solid #000; margin: 20px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+<thead>
+<tr style="background: #333; color: #fff;">
+<th style="border: 2px solid #000; padding: 12px; text-align: left; font-weight: bold; color: #fff;">Required Document</th>
+<th style="border: 2px solid #000; padding: 12px; text-align: center; font-weight: bold; color: #fff;">Status</th>
+</tr>
+</thead>
+<tbody>
 ${input.requiredDocuments
-  .map(doc => {
+  .map((doc: string, index: number) => {
     const status = documentStatus[doc];
-    const alternatives = foundAlternatives[doc] || [];
     const statusEmoji = status === 'FOUND' ? '✅' : '❌';
-    const altText =
-      alternatives.length > 0 ? alternatives.slice(0, 2).join(', ') + (alternatives.length > 2 ? '...' : '') : 'None';
-    return `| ${doc} | ${statusEmoji} ${status} | ${altText} |`;
+    const bgColor = index % 2 === 0 ? '#f9f9f9' : '#ffffff';
+    const statusBgColor = status === 'FOUND' ? '#d4edda' : '#f8d7da';
+
+    return `<tr style="background-color: ${bgColor};">
+<td style="border: 2px solid #000; padding: 12px; color: #000; font-weight: 500;">${doc}</td>
+<td style="border: 2px solid #000; padding: 12px; text-align: center; background-color: ${statusBgColor}; color: #000; font-weight: bold;">${statusEmoji}</td>
+</tr>`;
   })
   .join('\n')}
+</tbody>
+</table>
 
-**Compliance Summary:**
-- ✅ Documents Found: ${totalFound}/${input.requiredDocuments.length}
-- ❌ Documents Missing: ${totalMissing}
-- 📊 Completion Rate: ${completionRate}%
-- 🚨 Compliance Status: ${completionRate === 100 ? '✅ COMPLIANT' : '⚠️ NON-COMPLIANT'}
-
-**All Files in Patient Directory:**
-${foundFiles.length > 0 ? foundFiles.map(file => `• ${file}`).join('\n') : '⚠️ No files detected - may need to navigate to correct directory'}
+<div style="margin: 20px 0; padding: 15px; border: 2px solid #000; border-radius: 5px; background: #f0f0f0;">
+<strong style="color: #000;">Summary:</strong> ${totalFound}/${input.requiredDocuments.length} documents found (${completionRate}% compliant)
+</div>
 
 **Next Steps:**
 ${
   totalMissing > 0
     ? `⚠️ ${totalMissing} documents are missing. Please ensure the following documents are uploaded:\n${input.requiredDocuments
-        .filter(doc => documentStatus[doc] === 'MISSING')
-        .map(doc => `• ${doc}`)
+        .filter((doc: string) => documentStatus[doc] === 'MISSING')
+        .map((doc: string) => `• ${doc}`)
         .join('\n')}`
     : '✅ All required documents are present and accounted for.'
 }
@@ -1026,7 +1026,90 @@ ${
 
         try {
           const initialTabIds = await this.context.browserContext.getAllTabIds();
-          await page.clickElementNode(this.context.options.useVision, elementNode);
+
+          // Enhanced clicking for Google Drive folder navigation
+          const isGoogleDrive = await page.evaluateScript(`
+            window.location.hostname.includes('drive.google.com') || 
+            document.title.includes('Google Drive') ||
+            document.querySelector('[data-target="doc-title"]') !== null
+          `);
+
+          let clicked = false;
+
+          // For Google Drive, try enhanced folder clicking
+          if (isGoogleDrive) {
+            try {
+              const folderClickResult = await page.evaluateScript(`
+                (function() {
+                  const element = document.evaluate('${elementNode.xpath}', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+                  if (!element) return false;
+                  
+                  // Scroll element into view first
+                  element.scrollIntoView({ behavior: 'instant', block: 'center' });
+                  
+                  // Check if this looks like a folder element
+                  const text = element.textContent || '';
+                  const classList = element.className || '';
+                  const parentElement = element.closest('[role="gridcell"], [data-target="doc-title"], .a-s-qe-qE');
+                  
+                  const isFolder = text.toLowerCase().includes('folder') || 
+                                   text.toLowerCase().includes('site') ||
+                                   text.toLowerCase().includes('clinical') ||
+                                   text.toLowerCase().includes('patient') ||
+                                   classList.includes('folder') ||
+                                   element.querySelector('[data-testid*="folder"]') ||
+                                   parentElement !== null;
+                  
+                  // Create enhanced click events
+                  const rect = element.getBoundingClientRect();
+                  const centerX = rect.left + rect.width / 2;
+                  const centerY = rect.top + rect.height / 2;
+                  
+                  // Multiple event types for maximum compatibility
+                  const eventOptions = {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: centerX,
+                    clientY: centerY,
+                    button: 0,
+                    buttons: 1
+                  };
+                  
+                  const mouseDownEvent = new MouseEvent('mousedown', eventOptions);
+                  const mouseUpEvent = new MouseEvent('mouseup', eventOptions);
+                  const clickEvent = new MouseEvent('click', eventOptions);
+                  
+                  // Dispatch events in proper order
+                  element.dispatchEvent(mouseDownEvent);
+                  setTimeout(() => element.dispatchEvent(mouseUpEvent), 10);
+                  setTimeout(() => element.dispatchEvent(clickEvent), 20);
+                  
+                  // Also try direct click for compatibility
+                  setTimeout(() => element.click(), 30);
+                  
+                  // Focus element if possible
+                  if (element.focus) element.focus();
+                  
+                  return true;
+                })()
+              `);
+
+              if (folderClickResult) {
+                clicked = true;
+                // Wait for Google Drive navigation
+                await new Promise(resolve => setTimeout(resolve, 300));
+              }
+            } catch (error) {
+              logger.warning('Enhanced Google Drive click failed, falling back:', error);
+            }
+          }
+
+          // Fallback to standard click if not clicked yet
+          if (!clicked) {
+            await page.clickElementNode(this.context.options.useVision, elementNode);
+          }
+
           let msg = t('act_click_ok', [input.index.toString(), elementNode.getAllTextTillNextClickableElement(2)]);
           logger.info(msg);
 
@@ -1073,10 +1156,53 @@ ${
         try {
           const initialTabIds = await this.context.browserContext.getAllTabIds();
 
-          // Perform double-click by clicking twice with small delay
-          await page.clickElementNode(this.context.options.useVision, elementNode);
-          await new Promise(resolve => setTimeout(resolve, 100)); // Small delay between clicks
-          await page.clickElementNode(this.context.options.useVision, elementNode);
+          // Enhanced double-click for folder navigation
+          // First try native double-click event for better compatibility
+          try {
+            await page.evaluateScript(`
+              (function() {
+                const element = document.evaluate('${elementNode.xpath}', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+                if (element) {
+                  // Ensure element is in view
+                  element.scrollIntoView({ behavior: 'instant', block: 'center' });
+                  
+                  // Create and dispatch double-click event
+                  const dblClickEvent = new MouseEvent('dblclick', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true,
+                    button: 0,
+                    buttons: 1,
+                    clientX: element.getBoundingClientRect().left + element.getBoundingClientRect().width / 2,
+                    clientY: element.getBoundingClientRect().top + element.getBoundingClientRect().height / 2
+                  });
+                  element.dispatchEvent(dblClickEvent);
+                  
+                  // Also trigger click events for compatibility
+                  const clickEvent = new MouseEvent('click', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true,
+                    button: 0,
+                    buttons: 1
+                  });
+                  element.dispatchEvent(clickEvent);
+                  
+                  return true;
+                }
+                return false;
+              })()
+            `);
+
+            // Wait a bit for the action to process
+            await new Promise(resolve => setTimeout(resolve, 200));
+          } catch (scriptError) {
+            // Fallback to traditional double-click approach
+            logger.warning('Native double-click failed, using fallback:', scriptError);
+            await page.clickElementNode(this.context.options.useVision, elementNode);
+            await new Promise(resolve => setTimeout(resolve, 150)); // Slightly longer delay
+            await page.clickElementNode(this.context.options.useVision, elementNode);
+          }
 
           let msg = t('act_doubleClick_ok', [
             input.index.toString(),
@@ -1399,6 +1525,123 @@ ${
       }
     }, scrollToTextActionSchema);
     actions.push(scrollToText);
+
+    // Smart Scroll Search Action
+    const smartScrollSearch = new Action(async (input: z.infer<typeof smartScrollSearchActionSchema.schema>) => {
+      const intent = input.intent || `Smart scroll search for "${input.searchText}"`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+
+      const page = await this.context.browserContext.getCurrentPage();
+
+      try {
+        // Define scroll amounts
+        const scrollAmounts = {
+          small: 300,
+          medium: 500,
+          large: 800,
+        };
+
+        const scrollPixels = scrollAmounts[input.scrollAmount];
+        const scrollDirection = input.scrollDirection === 'up' ? -1 : 1;
+
+        let found = false;
+        let scrollCount = 0;
+        let foundElements: any[] = [];
+
+        // Perform smart scrolling search
+        for (let i = 0; i < input.maxScrolls && !found; i++) {
+          scrollCount++;
+
+          // Search for the text in current view first
+          const searchResult = await page.evaluateScript(`
+            (function() {
+              const searchText = "${input.searchText}";
+              const elements = [];
+              
+              // Search for elements containing the text (case-insensitive)
+              const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_ELEMENT,
+                {
+                  acceptNode: function(node) {
+                    // Skip hidden elements
+                    if (node.offsetParent === null && node.tagName !== 'BODY') {
+                      return NodeFilter.FILTER_REJECT;
+                    }
+                    return NodeFilter.FILTER_ACCEPT;
+                  }
+                }
+              );
+              
+              let node;
+              while (node = walker.nextNode()) {
+                const text = node.textContent || '';
+                if (text.toLowerCase().includes(searchText.toLowerCase())) {
+                  const rect = node.getBoundingClientRect();
+                  // Check if element is visible on screen
+                  if (rect.top >= 0 && rect.top <= window.innerHeight && 
+                      rect.left >= 0 && rect.left <= window.innerWidth) {
+                    elements.push({
+                      text: text.trim().substring(0, 100),
+                      tagName: node.tagName,
+                      isClickable: node.onclick !== null || 
+                                   node.getAttribute('role') === 'button' ||
+                                   ['A', 'BUTTON', 'INPUT', 'SELECT'].includes(node.tagName) ||
+                                   node.getAttribute('data-testid') ||
+                                   node.className.includes('click') ||
+                                   node.className.includes('folder'),
+                      rect: {
+                        top: rect.top,
+                        left: rect.left,
+                        width: rect.width,
+                        height: rect.height
+                      }
+                    });
+                  }
+                }
+              }
+              
+              return elements;
+            })()
+          `);
+
+          if (searchResult && searchResult.length > 0) {
+            found = true;
+            foundElements = searchResult;
+            break;
+          }
+
+          // If not found, scroll and try again
+          if (i < input.maxScrolls - 1) {
+            await page.evaluateScript(`window.scrollBy(0, ${scrollPixels * scrollDirection})`);
+            // Wait for content to load after scrolling
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        }
+
+        let msg;
+        if (found && foundElements.length > 0) {
+          const elementDescriptions = foundElements
+            .map((el, idx) => `${idx + 1}. ${el.tagName} - "${el.text}" (clickable: ${el.isClickable})`)
+            .join('\n');
+
+          msg = `Smart scroll search found ${foundElements.length} elements containing "${input.searchText}" after ${scrollCount} scroll(s):\n${elementDescriptions}`;
+
+          // Refresh the page state to get updated selectors
+          await page.getState();
+        } else {
+          msg = `Smart scroll search completed ${scrollCount} scroll(s) but did not find "${input.searchText}". Try different search terms or continue with manual navigation.`;
+        }
+
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
+        return new ActionResult({ extractedContent: msg, includeInMemory: true });
+      } catch (error) {
+        const errorMsg = `Smart scroll search failed: ${error instanceof Error ? error.message : String(error)}`;
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+        return new ActionResult({ error: errorMsg, includeInMemory: true });
+      }
+    }, smartScrollSearchActionSchema);
+    actions.push(smartScrollSearch);
 
     // Keyboard Actions
     const sendKeys = new Action(async (input: z.infer<typeof sendKeysActionSchema.schema>) => {
@@ -2097,7 +2340,7 @@ ${input.includeRecommendations ? `\n💡 RECOMMENDATIONS:\n${report.recommendati
               }
             }
           } catch (visualError) {
-            logger.warn('Visual approach failed, falling back to DOM:', visualError);
+            logger.warning('Visual approach failed, falling back to DOM:', visualError);
           }
         }
 
@@ -2175,7 +2418,7 @@ ${input.includeRecommendations ? `\n💡 RECOMMENDATIONS:\n${report.recommendati
               }
             }
           } catch (visualError) {
-            logger.warn('Visual approach failed, falling back to DOM:', visualError);
+            logger.warning('Visual approach failed, falling back to DOM:', visualError);
           }
         }
 

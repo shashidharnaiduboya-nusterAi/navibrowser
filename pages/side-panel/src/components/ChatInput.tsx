@@ -98,13 +98,13 @@ export default function ChatInput({
         disabled
           ? 'cursor-not-allowed'
           : isDarkMode
-            ? 'focus-within:ring-2 focus-within:ring-neural-400/60 hover:shadow-multi-glow-dark focus-within:shadow-neural-dark'
-            : 'focus-within:ring-2 focus-within:ring-neural-500/60 hover:shadow-multi-glow focus-within:shadow-neural'
+            ? 'focus-within:ring-neural-400/60 hover:shadow-multi-glow-dark focus-within:shadow-neural-dark focus-within:ring-2'
+            : 'focus-within:ring-neural-500/60 hover:shadow-multi-glow focus-within:shadow-neural focus-within:ring-2'
       } ${
         isDarkMode
-          ? 'glass-backdrop-dark bg-gradient-to-r from-neural-900/40 to-plasma-900/40'
-          : 'glass-backdrop bg-gradient-to-r from-neural-50/60 to-plasma-50/60'
-      } backdrop-blur-xl shadow-glass border ${
+          ? 'glass-backdrop-dark from-neural-900/40 to-plasma-900/40 bg-gradient-to-r'
+          : 'glass-backdrop from-neural-50/60 to-plasma-50/60 bg-gradient-to-r'
+      } shadow-glass border backdrop-blur-xl ${
         isDarkMode ? 'border-neural-700/40' : 'border-neural-300/60'
       } neural-glow shimmer`}
       aria-label={t('chat_input_form')}>
@@ -117,15 +117,15 @@ export default function ChatInput({
           disabled={disabled}
           aria-disabled={disabled}
           rows={5}
-          className={`w-full resize-none border-none p-4 bg-transparent focus:outline-none transition-all duration-300 ${
+          className={`w-full resize-none border-none bg-transparent p-4 transition-all duration-300 focus:outline-none ${
             disabled
               ? isDarkMode
-                ? 'cursor-not-allowed text-neural-500'
-                : 'cursor-not-allowed text-neural-400'
+                ? 'text-neural-500 cursor-not-allowed'
+                : 'text-neural-400 cursor-not-allowed'
               : isDarkMode
-                ? 'text-neural-100 placeholder-neural-400'
-                : 'text-neural-900 placeholder-neural-500'
-          } focus:ring-0 selection:bg-neural-400/30`}
+                ? 'text-neural-100 placeholder:text-neural-400'
+                : 'text-neural-900 placeholder:text-neural-500'
+          } selection:bg-neural-400/30 focus:ring-0`}
           placeholder={t('chat_input_placeholder')}
           aria-label={t('chat_input_editor')}
         />
@@ -133,8 +133,8 @@ export default function ChatInput({
         <div
           className={`flex items-center justify-between px-4 py-3 backdrop-blur-sm ${
             isDarkMode
-              ? 'bg-gradient-to-r from-neural-800/20 to-plasma-800/20'
-              : 'bg-gradient-to-r from-neural-50/20 to-plasma-50/20'
+              ? 'from-neural-800/20 to-plasma-800/20 bg-gradient-to-r'
+              : 'from-neural-50/20 to-plasma-50/20 bg-gradient-to-r'
           } border-t ${isDarkMode ? 'border-neural-600/30' : 'border-neural-200/50'}`}>
           <div className="flex gap-2 text-gray-500">
             {onMicClick && (

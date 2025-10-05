@@ -998,28 +998,28 @@ const SidePanel = () => {
 
   return (
     <div>
-      <div className="flex h-screen flex-col relative overflow-hidden bg-white border border-gray-200 shadow-sm">
-        <header className="header relative bg-white border-b border-gray-200">
+      <div className="relative flex h-screen flex-col overflow-hidden border border-gray-200 bg-white shadow-sm">
+        <header className="header relative border-b border-gray-200 bg-white">
           <div className="header-logo">
             {showHistory ? (
               <button
                 type="button"
                 onClick={() => handleBackToChat(false)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 ${
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 transition-all duration-300 ${
                   isDarkMode
                     ? 'text-neural-300 hover:text-neural-100 hover:bg-glass-violet'
                     : 'text-neural-600 hover:text-neural-900 hover:bg-glass-violet'
-                } hover:scale-105 backdrop-blur-sm neural-glow`}
+                } neural-glow backdrop-blur-sm hover:scale-105`}
                 aria-label={t('nav_back_a11y')}>
                 <span className="text-lg">←</span>
                 <span className="text-sm font-medium">{t('nav_back')}</span>
               </button>
             ) : (
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-white border border-gray-200 shadow-sm">
-                  <img src="/gsk-logo.png" alt="GSK" className="h-6 w-6 object-contain" />
+                <div className="rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+                  <img src="/gsk-logo.png" alt="GSK" className="size-6 object-contain" />
                 </div>
-                <span className="text-lg font-semibold text-gray-800">CRA Assistant</span>
+                <span className="text-lg font-semibold text-gray-800">Agentic Browser</span>
               </div>
             )}
           </div>
@@ -1032,11 +1032,11 @@ const SidePanel = () => {
                   onKeyDown={e => e.key === 'Enter' && handleNewChat()}
                   className={`header-icon ${
                     isDarkMode ? 'text-neural-300 hover:text-plasma-300' : 'text-neural-600 hover:text-plasma-600'
-                  } cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-lg ${
+                  } cursor-pointer rounded-lg p-2 transition-all duration-300 hover:scale-110 active:scale-95 ${
                     isDarkMode
                       ? 'hover:bg-glass-violet hover:shadow-neural-dark'
                       : 'hover:bg-glass-violet hover:shadow-neural'
-                  } backdrop-blur-sm shimmer neural-glow`}
+                  } shimmer neural-glow backdrop-blur-sm`}
                   aria-label={t('nav_newChat_a11y')}
                   tabIndex={0}>
                   <PiPlusBold size={20} />
@@ -1047,11 +1047,11 @@ const SidePanel = () => {
                   onKeyDown={e => e.key === 'Enter' && handleLoadHistory()}
                   className={`header-icon ${
                     isDarkMode ? 'text-neural-300 hover:text-cyber-300' : 'text-neural-600 hover:text-cyber-600'
-                  } cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95 p-2 rounded-lg ${
+                  } cursor-pointer rounded-lg p-2 transition-all duration-300 hover:scale-110 active:scale-95 ${
                     isDarkMode
                       ? 'hover:bg-glass-cyan hover:shadow-cyber-dark'
                       : 'hover:bg-glass-cyan hover:shadow-cyber'
-                  } backdrop-blur-sm shimmer neural-glow`}
+                  } shimmer neural-glow backdrop-blur-sm`}
                   aria-label={t('nav_loadHistory_a11y')}
                   tabIndex={0}>
                   <GrHistory size={20} />
@@ -1062,7 +1062,7 @@ const SidePanel = () => {
               type="button"
               onClick={() => chrome.runtime.openOptionsPage()}
               onKeyDown={e => e.key === 'Enter' && chrome.runtime.openOptionsPage()}
-              className="header-icon text-gray-600 hover:text-gray-800 cursor-pointer transition-all duration-200 hover:scale-105 p-2 rounded-lg hover:bg-gray-100"
+              className="header-icon cursor-pointer rounded-lg p-2 text-gray-600 transition-all duration-200 hover:scale-105 hover:bg-gray-100 hover:text-gray-800"
               aria-label={t('nav_settings_a11y')}
               tabIndex={0}>
               <FiSettings size={20} />
@@ -1090,7 +1090,7 @@ const SidePanel = () => {
                 }`}>
                 <div className="text-center">
                   <div
-                    className={`mx-auto mb-4 h-12 w-12 rounded-full ${
+                    className={`mx-auto mb-4 size-12 rounded-full ${
                       isDarkMode ? 'bg-neural-gradient-dark' : 'bg-neural-gradient'
                     } animate-pulse-neural neural-glow`}></div>
                   <p className="text-sm font-medium">{t('status_checkingConfig')}</p>
@@ -1105,20 +1105,19 @@ const SidePanel = () => {
                   isDarkMode ? 'text-neural-300' : 'text-neural-700'
                 }`}>
                 <div className="max-w-sm text-center">
-                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-white border border-gray-200 shadow-lg">
-                    <img src="/gsk-logo.png" alt="GSK" className="h-12 w-12 object-contain" />
+                  <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-2xl border border-gray-200 bg-white shadow-lg">
+                    <img src="/gsk-logo.png" alt="GSK" className="size-12 object-contain" />
                   </div>
 
-                  <h3 className="mb-3 text-xl font-bold text-gray-800">Welcome to CRA Assistant</h3>
+                  <h3 className="mb-3 text-xl font-bold text-gray-800">Welcome to Agentic Browser</h3>
 
                   <p className="mb-6 text-sm leading-relaxed text-gray-600">
-                    Your intelligent assistant for clinical research activities. Get started by typing your task or
-                    question below.
+                    Your intelligent browser automation assistant. Get started by typing your task or question below.
                   </p>
 
                   <button
                     onClick={() => chrome.runtime.openOptionsPage()}
-                    className="w-full rounded-lg px-6 py-3 font-semibold transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 hover:border-blue-700 shadow-sm hover:shadow-md">
+                    className="w-full rounded-lg border border-blue-600 bg-blue-600 px-6 py-3 font-semibold text-white shadow-sm transition-all duration-200 hover:border-blue-700 hover:bg-blue-700 hover:shadow-md">
                     Configure Models
                   </button>
                 </div>

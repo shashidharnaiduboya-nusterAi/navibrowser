@@ -264,6 +264,19 @@ export const sendKeysActionSchema: ActionSchema = {
   }),
 };
 
+export const smartScrollSearchActionSchema: ActionSchema = {
+  name: 'smart_scroll_search',
+  description:
+    'INTELLIGENT scrolling and searching action for finding specific elements on a page. Automatically scrolls through the page while searching for target text or elements. Perfect for finding folders, files, or specific content that may not be currently visible. Much more effective than manual scrolling when looking for specific items.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    searchText: z.string().describe('text to search for while scrolling (e.g., "Clinical trial sites", "patient001")'),
+    maxScrolls: z.number().int().default(5).describe('maximum number of scroll attempts (default: 5)'),
+    scrollDirection: z.enum(['down', 'up']).default('down').describe('direction to scroll'),
+    scrollAmount: z.enum(['small', 'medium', 'large']).default('medium').describe('amount to scroll each time'),
+  }),
+};
+
 export const getDropdownOptionsActionSchema: ActionSchema = {
   name: 'get_dropdown_options',
   description: 'Get all options from a native dropdown',

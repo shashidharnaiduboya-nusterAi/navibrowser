@@ -1,6 +1,10 @@
 /* Vibrant Neural AI Glass UI */
 body {
   border-color: rgba(139, 92, 246, 0.4) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
+  font-weight: 400 !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
 }
 
 /* Enhanced Glass morphism with neural vibes */
@@ -269,4 +273,79 @@ code {
   .dark-mode-border {
     border-color: #475569 !important; /* slate-600 */
   }
+}
+
+/* Message HTML Content Styling */
+.message-html-content {
+  max-width: 100%;
+  overflow-x: auto;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+.message-html-content table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 20px 0 !important;
+  font-size: 14px !important;
+  border: 3px solid #000 !important;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+.message-html-content th,
+.message-html-content td {
+  padding: 12px !important;
+  text-align: left !important;
+  border: 2px solid #000 !important;
+  word-wrap: break-word !important;
+  color: #000 !important;
+  background-color: #fff !important;
+}
+
+.message-html-content th {
+  background-color: #333 !important;
+  color: #fff !important;
+  font-weight: bold !important;
+}
+
+.message-html-content h1,
+.message-html-content h2,
+.message-html-content h3,
+.message-html-content h4 {
+  color: #000 !important;
+  font-weight: bold !important;
+  margin: 15px 0 10px 0 !important;
+  line-height: 1.3 !important;
+}
+
+.message-html-content strong {
+  font-weight: bold !important;
+  color: #000 !important;
+}
+
+.message-html-content div {
+  color: #000 !important;
+}
+
+/* Force black text and proper borders */
+.message-html-content * {
+  color: #000 !important;
+}
+
+.message-html-content table * {
+  border-color: #000 !important;
+}
+
+/* Header cells should be white text on dark background */
+.message-html-content th,
+.message-html-content thead td {
+  color: #fff !important;
+  background-color: #333 !important;
+}
+
+/* Ensure proper visibility */
+.message-html-content {
+  background: #fff !important;
+  padding: 10px !important;
+  border-radius: 8px !important;
 }

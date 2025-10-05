@@ -65,6 +65,10 @@ function MessageBlock({ message, isSameActor, isDarkMode = false }: MessageBlock
               <div className={`h-1 overflow-hidden rounded ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
                 <div className="h-full animate-progress bg-blue-500" />
               </div>
+            ) : message.content.includes('<div') ||
+              message.content.includes('<table') ||
+              message.content.includes('<h') ? (
+              <div dangerouslySetInnerHTML={{ __html: message.content }} className="message-html-content" />
             ) : (
               message.content
             )}
